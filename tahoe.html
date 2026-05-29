@@ -200,17 +200,21 @@
         (list || []).forEach((p) => {
           const d = document.createElement('div');
           d.className = 'package';
-          const imageUrl = tenant && tenant.brand && tenant.brand.heroImage ? tenant.brand.heroImage : '';
+          const imageUrl = tenant && tenant.referenceImages && tenant.referenceImages.length
+            ? tenant.referenceImages[0]
+            : (tenant && tenant.brand && tenant.brand.heroImage ? tenant.brand.heroImage : '');
           d.innerHTML = `${imageUrl ? `<img class="uniform-image" src="${imageUrl}" alt="${p.name} image" />` : ''}<h4>${p.name}</h4><p>${p.focus || ''}</p><p class="sub">${(p.highlights || []).join(' · ')}</p>`;
           packagesEl.appendChild(d);
         });
       }
       function renderSnippets(list) {
         snippets.innerHTML = '';
-        (list || []).forEach((s) => {
+        (list || []).forEach((s, idx) => {
           const d = document.createElement('div');
           d.className = 'card';
-          const imageUrl = tenant && tenant.brand && tenant.brand.heroImage ? tenant.brand.heroImage : '';
+          const imageUrl = tenant && tenant.referenceImages && tenant.referenceImages.length
+            ? tenant.referenceImages[idx % tenant.referenceImages.length]
+            : (tenant && tenant.brand && tenant.brand.heroImage ? tenant.brand.heroImage : '');
           d.innerHTML = `${imageUrl ? `<img class="uniform-image" src="${imageUrl}" alt="${s.title || 'Snippet'} image" />` : ''}<strong>${s.title || 'Untitled'}</strong><div>${s.description || ''}</div><div class="mono">${s.url || ''}</div>`;
           snippets.appendChild(d);
         });

@@ -294,6 +294,33 @@ function seededHexColor(seed, offset = 0) {
   return `#${hex}`;
 }
 
+function buildInlineReferenceImage(label, primary, accent) {
+  const safeLabel = String(label || 'Reference').replace(/[<>&"]/g, '').slice(0, 40);
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${primary}"/>
+      <stop offset="100%" stop-color="${accent}"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g)"/>
+  <rect x="30" y="30" width="1220" height="660" rx="28" ry="28" fill="rgba(2,6,23,0.35)" stroke="rgba(255,255,255,0.35)"/>
+  <text x="640" y="360" text-anchor="middle" fill="#f8fafc" font-family="Inter,Arial,sans-serif" font-size="64" font-weight="700">${safeLabel}</text>
+  <text x="640" y="420" text-anchor="middle" fill="#e2e8f0" font-family="Inter,Arial,sans-serif" font-size="32">Headless 360 Reference Asset</text>
+</svg>`.trim();
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function buildReferenceImages(companyName, primary, accent) {
+  const base = companyName || 'Customer';
+  return [
+    buildInlineReferenceImage(`${base} Hero`, primary, accent),
+    buildInlineReferenceImage(`${base} Experience`, accent, primary),
+    buildInlineReferenceImage(`${base} Support`, primary, '#0ea5e9')
+  ];
+}
+
 const VISUAL_ARCHETYPES = {
   enterprise: { surface: '#0a1020', text: '#e2e8f0' },
   consumer: { surface: '#1a1027', text: '#f8fafc' },
@@ -563,6 +590,7 @@ function buildTenantConfig(seedUrl, crawlResult) {
     (allFonts.length ? 1 : 0) +
     (terms.length ? 1 : 0);
   const fidelity = signalStrength >= 5 ? 'high' : signalStrength >= 3 ? 'medium' : 'low';
+  const referenceImages = buildReferenceImages(companyName || 'Customer', primary, accent);
 
   return {
     tenantId: safeSlug(companyName || origin.hostname),
@@ -595,6 +623,7 @@ function buildTenantConfig(seedUrl, crawlResult) {
     },
     kpis,
     packages,
+    referenceImages,
     brand: {
       heroTitle,
       navItems: navItems.length ? navItems : ['Home', 'Solutions', 'Support', 'About'],
