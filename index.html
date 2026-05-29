@@ -766,13 +766,11 @@
       }
 
       function openSupportOverlay() {
-        if (!currentTenant) {
-          setStatus('Build an experience first.');
-          return;
-        }
         supportOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
         overlayChatLog.innerHTML = '';
-        addOverlayChatMessage('bot', `Concierge ready for ${currentTenant.companyName}.`);
+        const tenantName = currentTenant && currentTenant.companyName ? currentTenant.companyName : 'your customer';
+        addOverlayChatMessage('bot', `Concierge ready for ${tenantName}.`);
         const utilApi =
           window.embeddedservice_bootstrap &&
           window.embeddedservice_bootstrap.utilAPI;
@@ -784,17 +782,18 @@
           } catch (error) {
             overlayEmbedStatus.textContent = `Native launch error: ${error.message}`;
           }
-        } else if (currentTenant.agentforce && currentTenant.agentforce.embedUrl) {
+        } else if (currentTenant && currentTenant.agentforce && currentTenant.agentforce.embedUrl) {
           overlayAgentforceFrame.src = currentTenant.agentforce.embedUrl;
           overlayEmbedStatus.textContent = 'Using iframe embed URL.';
         } else {
           overlayAgentforceFrame.removeAttribute('src');
-          overlayEmbedStatus.textContent = 'Native widget unavailable and no iframe embed URL. Use grounded fallback chat.';
+          overlayEmbedStatus.textContent = 'Native widget unavailable right now. Use grounded fallback chat or click Launch Native Salesforce Chat.';
         }
       }
 
       function closeSupportOverlay() {
         supportOverlay.classList.remove('open');
+        document.body.style.overflow = '';
       }
 
       function launchOverlayNativeChat() {
@@ -1121,22 +1120,26 @@
       sendBtn.addEventListener('click', sendSupportMessage);
       launchEmbeddedBtn.addEventListener('click', launchEmbeddedMessaging);
       resetEmbeddedBtn.addEventListener('click', resetEmbeddedMessaging);
-      openSupportOverlayBtn.addEventListener('click', openSupportOverlay);
-      closeSupportOverlayBtn.addEventListener('click', closeSupportOverlay);
-      overlaySendBtn.addEventListener('click', sendOverlaySupportMessage);
-      overlayLaunchNativeBtn.addEventListener('click', launchOverlayNativeChat);
+      if (openSupportOverlayBtn) openSupportOverlayBtn.addEventListener('click', openSupportOverlay);
+      if (closeSupportOverlayBtn) closeSupportOverlayBtn.addEventListener('click', closeSupportOverlay);
+      if (overlaySendBtn) overlaySendBtn.addEventListener('click', sendOverlaySupportMessage);
+      if (overlayLaunchNativeBtn) overlayLaunchNativeBtn.addEventListener('click', launchOverlayNativeChat);
       urlInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') buildExperience();
       });
       chatInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') sendSupportMessage();
       });
-      overlayChatInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') sendOverlaySupportMessage();
-      });
-      supportOverlay.addEventListener('click', (event) => {
-        if (event.target === supportOverlay) closeSupportOverlay();
-      });
+      if (overlayChatInput) {
+        overlayChatInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') sendOverlaySupportMessage();
+        });
+      }
+      if (supportOverlay) {
+        supportOverlay.addEventListener('click', (event) => {
+          if (event.target === supportOverlay) closeSupportOverlay();
+        });
+      }
 
       navButtons.forEach((button) => {
         button.addEventListener('click', () => {
