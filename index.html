@@ -311,6 +311,61 @@
       .chat-header strong {
         color: #7dd3fc;
       }
+      .launch-hero {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .launch-hero button {
+        min-width: 0;
+        width: auto;
+      }
+      .support-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: radial-gradient(circle at 30% 20%, rgba(11, 92, 171, 0.34), rgba(2, 6, 23, 0.96));
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .support-overlay.open {
+        display: flex;
+      }
+      .overlay-card {
+        width: min(1100px, 96vw);
+        max-height: 92vh;
+        overflow: auto;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: rgba(2, 6, 23, 0.86);
+        box-shadow: 0 35px 80px rgba(0, 0, 0, 0.5);
+        transform: translateY(18px) scale(0.98);
+        opacity: 0;
+        animation: overlayIn 280ms ease forwards;
+      }
+      @keyframes overlayIn {
+        to { transform: translateY(0) scale(1); opacity: 1; }
+      }
+      .overlay-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        position: sticky;
+        top: 0;
+        background: rgba(2, 6, 23, 0.92);
+      }
+      .overlay-title {
+        font-weight: 700;
+      }
+      .overlay-body {
+        padding: 14px;
+      }
       .chat-log {
         height: 340px;
         overflow: auto;
@@ -485,6 +540,9 @@
                 <button id="launchEmbeddedBtn" type="button">Launch Salesforce Chat</button>
                 <button id="resetEmbeddedBtn" type="button">Reset Embed</button>
               </div>
+              <div class="launch-hero">
+                <button id="openSupportOverlayBtn" type="button">Open Cinematic Support</button>
+              </div>
               <div id="supportDiagnostics" class="support-diagnostics">
                 Diagnostics: waiting for config.
               </div>
@@ -527,6 +585,39 @@
         </section>
       </section>
     </div>
+
+    <div id="supportOverlay" class="support-overlay" role="dialog" aria-modal="true" aria-label="Support Concierge">
+      <div class="overlay-card">
+        <div class="overlay-top">
+          <div class="overlay-title">Customer Concierge Support Experience</div>
+          <button id="closeSupportOverlayBtn" type="button">Close</button>
+        </div>
+        <div class="overlay-body">
+          <div class="grid2">
+            <article class="card">
+              <h3 style="margin-top:0;">Embedded Agentforce</h3>
+              <p class="muted" id="overlayEmbedStatus">Waiting for launch...</p>
+              <div class="chat-shell">
+                <div class="chat-header">Live Concierge Channel</div>
+                <iframe id="overlayAgentforceFrame" title="Overlay Embedded Agentforce" style="width:100%; height:420px; border:0; background:#fff;"></iframe>
+              </div>
+            </article>
+            <article class="card">
+              <h3 style="margin-top:0;">Grounded Copilot Backup</h3>
+              <p class="muted">Use this when live channel is unavailable.</p>
+              <div class="chat-shell">
+                <div class="chat-header">Fast Demo Response Path</div>
+                <div id="overlayChatLog" class="chat-log"></div>
+                <div class="chat-input">
+                  <input id="overlayChatInput" type="text" placeholder="Ask a support/demo question..." />
+                  <button id="overlaySendBtn" type="button">Send</button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
     <button id="editBuilderBtn" class="edit-builder-btn hidden" type="button">
       Edit Builder
     </button>
@@ -545,6 +636,14 @@
       const supportDiagnostics = document.getElementById('supportDiagnostics');
       const launchEmbeddedBtn = document.getElementById('launchEmbeddedBtn');
       const resetEmbeddedBtn = document.getElementById('resetEmbeddedBtn');
+      const openSupportOverlayBtn = document.getElementById('openSupportOverlayBtn');
+      const closeSupportOverlayBtn = document.getElementById('closeSupportOverlayBtn');
+      const supportOverlay = document.getElementById('supportOverlay');
+      const overlayAgentforceFrame = document.getElementById('overlayAgentforceFrame');
+      const overlayEmbedStatus = document.getElementById('overlayEmbedStatus');
+      const overlayChatLog = document.getElementById('overlayChatLog');
+      const overlayChatInput = document.getElementById('overlayChatInput');
+      const overlaySendBtn = document.getElementById('overlaySendBtn');
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
       const modeInput = document.getElementById('modeInput');
@@ -573,6 +672,14 @@
         node.textContent = text;
         chatLog.appendChild(node);
         chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      function addOverlayChatMessage(role, text) {
+        const node = document.createElement('div');
+        node.className = `msg ${role}`;
+        node.textContent = text;
+        overlayChatLog.appendChild(node);
+        overlayChatLog.scrollTop = overlayChatLog.scrollHeight;
       }
 
       function initEmbeddedMessaging(config) {
@@ -645,6 +752,59 @@
           setDiagnostics('Cannot launch: utilAPI unavailable and no site URL.');
         } catch (error) {
           setDiagnostics(`Launch failed: ${error.message}`);
+        }
+      }
+
+      function openSupportOverlay() {
+        if (!currentTenant) {
+          setStatus('Build an experience first.');
+          return;
+        }
+        supportOverlay.classList.add('open');
+        overlayChatLog.innerHTML = '';
+        addOverlayChatMessage('bot', `Concierge ready for ${currentTenant.companyName}.`);
+
+        if (currentTenant.agentforce && currentTenant.agentforce.embedUrl) {
+          overlayAgentforceFrame.src = currentTenant.agentforce.embedUrl;
+          overlayEmbedStatus.textContent = 'Using iframe embed URL.';
+        } else if (embeddedConfig && embeddedConfig.siteUrl) {
+          overlayAgentforceFrame.src = embeddedConfig.siteUrl;
+          overlayEmbedStatus.textContent = 'Using Embedded Messaging deployment site URL.';
+        } else {
+          overlayAgentforceFrame.removeAttribute('src');
+          overlayEmbedStatus.textContent = 'No direct embed URL available. Use grounded fallback chat.';
+        }
+      }
+
+      function closeSupportOverlay() {
+        supportOverlay.classList.remove('open');
+      }
+
+      async function sendOverlaySupportMessage() {
+        if (!currentTenant) return;
+        const message = overlayChatInput.value.trim();
+        if (!message) return;
+        overlayChatInput.value = '';
+        addOverlayChatMessage('user', message);
+        overlaySendBtn.disabled = true;
+        try {
+          const response = await fetch('/api/support', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tenantId: currentTenant.tenantId,
+              message,
+              history: chatHistory.slice(-8)
+            })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Support request failed.');
+          addOverlayChatMessage('bot', data.reply || 'No response.');
+          chatHistory.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply || '' });
+        } catch (error) {
+          addOverlayChatMessage('bot', `Issue: ${error.message}`);
+        } finally {
+          overlaySendBtn.disabled = false;
         }
       }
 
@@ -928,11 +1088,20 @@
       sendBtn.addEventListener('click', sendSupportMessage);
       launchEmbeddedBtn.addEventListener('click', launchEmbeddedMessaging);
       resetEmbeddedBtn.addEventListener('click', resetEmbeddedMessaging);
+      openSupportOverlayBtn.addEventListener('click', openSupportOverlay);
+      closeSupportOverlayBtn.addEventListener('click', closeSupportOverlay);
+      overlaySendBtn.addEventListener('click', sendOverlaySupportMessage);
       urlInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') buildExperience();
       });
       chatInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') sendSupportMessage();
+      });
+      overlayChatInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') sendOverlaySupportMessage();
+      });
+      supportOverlay.addEventListener('click', (event) => {
+        if (event.target === supportOverlay) closeSupportOverlay();
       });
 
       navButtons.forEach((button) => {
