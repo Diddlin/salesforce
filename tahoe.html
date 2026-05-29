@@ -23,6 +23,17 @@
       button{border:none;background:linear-gradient(135deg,var(--pri),var(--acc));color:#04111f;font-weight:700;cursor:pointer}
       button.secondary{background:rgba(15,23,42,.9);color:var(--text);border:1px solid var(--line)}
       .packages,.stack{display:grid;gap:10px}.ok{display:none;border:1px solid rgba(16,185,129,.4);color:#bbf7d0;background:rgba(6,78,59,.24);border-radius:10px;padding:10px}
+      .uniform-image{
+        width:100%;
+        aspect-ratio:16/9;
+        object-fit:cover;
+        object-position:center;
+        display:block;
+        border-radius:10px;
+        border:1px solid var(--line);
+        margin-bottom:8px;
+        background:rgba(15,23,42,.8);
+      }
       .portal{display:none;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.portal.open{display:grid}
       .table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left}
       .chat{border:1px solid var(--line);border-radius:12px;overflow:hidden}.chat-head{background:rgba(3,105,161,.22);border-bottom:1px solid var(--line);padding:10px}
@@ -189,7 +200,8 @@
         (list || []).forEach((p) => {
           const d = document.createElement('div');
           d.className = 'package';
-          d.innerHTML = `<h4>${p.name}</h4><p>${p.focus || ''}</p><p class="sub">${(p.highlights || []).join(' · ')}</p>`;
+          const imageUrl = tenant && tenant.brand && tenant.brand.heroImage ? tenant.brand.heroImage : '';
+          d.innerHTML = `${imageUrl ? `<img class="uniform-image" src="${imageUrl}" alt="${p.name} image" />` : ''}<h4>${p.name}</h4><p>${p.focus || ''}</p><p class="sub">${(p.highlights || []).join(' · ')}</p>`;
           packagesEl.appendChild(d);
         });
       }
@@ -198,7 +210,8 @@
         (list || []).forEach((s) => {
           const d = document.createElement('div');
           d.className = 'card';
-          d.innerHTML = `<strong>${s.title || 'Untitled'}</strong><div>${s.description || ''}</div><div class="mono">${s.url || ''}</div>`;
+          const imageUrl = tenant && tenant.brand && tenant.brand.heroImage ? tenant.brand.heroImage : '';
+          d.innerHTML = `${imageUrl ? `<img class="uniform-image" src="${imageUrl}" alt="${s.title || 'Snippet'} image" />` : ''}<strong>${s.title || 'Untitled'}</strong><div>${s.description || ''}</div><div class="mono">${s.url || ''}</div>`;
           snippets.appendChild(d);
         });
       }
