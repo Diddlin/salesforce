@@ -278,6 +278,22 @@ function extractTopTerms(text, maxTerms = 8) {
     .map(([term]) => term);
 }
 
+function hashString(input) {
+  let h = 0;
+  const s = String(input || '');
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function seededHexColor(seed, offset = 0) {
+  const n = (hashString(seed) + offset) % 0xffffff;
+  const hex = n.toString(16).padStart(6, '0');
+  return `#${hex}`;
+}
+
 function pickIndustry(terms) {
   const joined = terms.join(' ');
   if (/health|patient|clinic|medical|care/.test(joined)) return 'Healthcare';
@@ -513,8 +529,10 @@ function buildTenantConfig(seedUrl, crawlResult) {
   const terms = extractTopTerms(allText);
   const industry = pickIndustry(terms);
   const themeColor = extractThemeColor(firstHtml);
-  const primary = themeColor || allColors[0] || '#0b5cab';
-  const accent = allColors[1] || '#06b6d4';
+  const seededPrimary = seededHexColor(origin.hostname, 131);
+  const seededAccent = seededHexColor(origin.hostname, 9973);
+  const primary = themeColor || allColors[0] || seededPrimary;
+  const accent = allColors[1] || seededAccent;
   const surface = '#0f172a';
   const kpis = createKpiSet(industry);
   const packages = buildPackages(companyName || 'Customer', terms);
@@ -531,6 +549,14 @@ function buildTenantConfig(seedUrl, crawlResult) {
     ...terms.slice(0, 4),
     ...(headings[0] ? [headings[0].split(' ').slice(0, 3).join(' ')] : [])
   ].filter(Boolean);
+  const signalStrength =
+    (navItems.length ? 1 : 0) +
+    (ctaLabels.length ? 1 : 0) +
+    (headings.length ? 1 : 0) +
+    (heroImage ? 1 : 0) +
+    (allFonts.length ? 1 : 0) +
+    (terms.length ? 1 : 0);
+  const fidelity = signalStrength >= 5 ? 'high' : signalStrength >= 3 ? 'medium' : 'low';
 
   return {
     tenantId: safeSlug(companyName || origin.hostname),
@@ -550,6 +576,8 @@ function buildTenantConfig(seedUrl, crawlResult) {
       topTerms: terms,
       crawlMode: mode,
       crawlPages: pages.length,
+      signalStrength,
+      fidelity,
       snippets: pages
         .map((p) => ({
           url: p.url,

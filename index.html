@@ -378,6 +378,7 @@
         <div id="siteNav" class="site-nav"></div>
         <div id="vibeRow" class="vibe-row"></div>
         <div id="ctaRow" class="cta-row"></div>
+        <p id="reskinReport" class="status">Reskin report: waiting for URL.</p>
         <div class="control-grid">
           <label for="urlInput">Customer Website URL</label>
           <div class="control-row">
@@ -512,6 +513,7 @@
       const modeInput = document.getElementById('modeInput');
       const chatInput = document.getElementById('chatInput');
       const chatLog = document.getElementById('chatLog');
+      const reskinReport = document.getElementById('reskinReport');
       const navButtons = document.querySelectorAll('.tab-btn');
       let currentTenant = null;
       let chatHistory = [];
@@ -653,6 +655,7 @@
         document.getElementById('challengeSummary').textContent = config.challengeSummary || '';
         document.getElementById('industry').textContent = config.industry || 'General Business';
         document.getElementById('agentNote').textContent = config.agentforce.notes;
+        reskinReport.textContent = `Reskin report: ${config.grounding?.crawlMode || 'light'} mode | ${config.grounding?.crawlPages || 0} pages | fidelity ${config.grounding?.fidelity || 'low'} | signals ${config.grounding?.signalStrength || 0}/6`;
         if (config.agentforce && config.agentforce.embedUrl) {
           agentforceFrame.src = config.agentforce.embedUrl;
           agentforceEmbed.classList.remove('hidden');
