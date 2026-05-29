@@ -160,6 +160,44 @@ function extractMeta(html, name) {
   return extractTagText(html, re);
 }
 
+function extractFirstMatch(html, regex) {
+  const match = html.match(regex);
+  return match ? htmlDecode(match[1].trim()) : '';
+}
+
+function extractNavItems(html, maxItems = 6) {
+  const out = [];
+  const regex = /<a[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = regex.exec(html)) && out.length < maxItems) {
+    const text = stripHtmlText(match[1] || '').trim();
+    if (text.length >= 3 && text.length <= 28 && !out.includes(text)) {
+      out.push(text);
+    }
+  }
+  return out;
+}
+
+function extractHeroHeading(html) {
+  return (
+    extractFirstMatch(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
+    extractMeta(html, 'og:title') ||
+    extractTagText(html, /<title[^>]*>([^<]*)<\/title>/i)
+  );
+}
+
+function extractThemeColor(html) {
+  return (
+    extractMeta(html, 'theme-color') ||
+    extractMeta(html, 'msapplication-TileColor') ||
+    ''
+  );
+}
+
+function extractOgImage(html) {
+  return extractMeta(html, 'og:image') || extractMeta(html, 'twitter:image') || '';
+}
+
 function stripHtmlText(html) {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -317,7 +355,8 @@ async function lightweightCrawl(seedUrl) {
         title,
         description,
         textSample: text.slice(0, 1200),
-        colors
+        colors,
+        rawHtml: html.slice(0, 80000)
       });
       const links = extractInternalLinks(html, current);
       for (const link of links) {
@@ -340,6 +379,7 @@ async function lightweightCrawl(seedUrl) {
 function buildTenantConfig(seedUrl, pages) {
   const firstPage = pages[0] || {};
   const origin = new URL(seedUrl);
+  const firstHtml = firstPage.rawHtml || '';
   const companyName = (firstPage.title || origin.hostname.replace('www.', ''))
     .split(/[\-|:|•|\|]/)[0]
     .trim();
@@ -347,7 +387,8 @@ function buildTenantConfig(seedUrl, pages) {
   const allColors = [...new Set(pages.flatMap((p) => p.colors || []))];
   const terms = extractTopTerms(allText);
   const industry = pickIndustry(terms);
-  const primary = allColors[0] || '#0b5cab';
+  const themeColor = extractThemeColor(firstHtml);
+  const primary = themeColor || allColors[0] || '#0b5cab';
   const accent = allColors[1] || '#06b6d4';
   const surface = '#0f172a';
   const kpis = createKpiSet(industry);
@@ -355,6 +396,10 @@ function buildTenantConfig(seedUrl, pages) {
   const challengeSummary =
     firstPage.description ||
     `Create a tailored ${industry.toLowerCase()} experience using web-grounded context and embedded support.`;
+  const heroTitle = extractHeroHeading(firstHtml) || `Welcome to ${companyName}`;
+  const navItems = extractNavItems(firstHtml);
+  const heroImage = extractOgImage(firstHtml);
+  const logoUrl = heroImage || `${origin.origin}/favicon.ico`;
 
   return {
     tenantId: safeSlug(companyName || origin.hostname),
@@ -385,6 +430,12 @@ function buildTenantConfig(seedUrl, pages) {
     },
     kpis,
     packages,
+    brand: {
+      heroTitle,
+      navItems: navItems.length ? navItems : ['Home', 'Solutions', 'Support', 'About'],
+      heroImage,
+      logoUrl
+    },
     agentforce: {
       orgAlias: 'wint-tmt',
       mode: 'embedded-support',
@@ -396,7 +447,7 @@ function buildTenantConfig(seedUrl, pages) {
       notes:
         'Use these crawl snippets as low-cost grounding context before invoking the WINT TMT support agent.'
     },
-    logoUrl: `${origin.origin}/favicon.ico`
+    logoUrl
   };
 }
 
