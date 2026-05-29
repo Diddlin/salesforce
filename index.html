@@ -605,6 +605,7 @@
               <p class="muted" id="overlayEmbedStatus">Waiting for launch...</p>
               <div class="support-actions">
                 <button id="overlayLaunchNativeBtn" type="button">Launch Native Salesforce Chat</button>
+                <button id="overlayReinitBtn" type="button">Reinitialize Chat SDK</button>
               </div>
               <div class="chat-shell">
                 <div class="chat-header">Live Concierge Channel</div>
@@ -654,6 +655,7 @@
       const overlayChatInput = document.getElementById('overlayChatInput');
       const overlaySendBtn = document.getElementById('overlaySendBtn');
       const overlayLaunchNativeBtn = document.getElementById('overlayLaunchNativeBtn');
+      const overlayReinitBtn = document.getElementById('overlayReinitBtn');
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
       const modeInput = document.getElementById('modeInput');
@@ -667,6 +669,7 @@
       let currentTenant = null;
       let chatHistory = [];
       let embeddedConfig = null;
+      let embeddedInitState = 'idle';
 
       function setStatus(message) {
         statusEl.textContent = message;
@@ -696,16 +699,19 @@
         const msgCfg = config && config.agentforce && config.agentforce.embeddedMessaging;
         embeddedConfig = msgCfg || null;
         if (!msgCfg || !msgCfg.bootstrapUrl) {
+          embeddedInitState = 'missing-config';
           embedStatus.textContent = 'Embedded Messaging not configured.';
           setDiagnostics('No embedded messaging config present.');
           return;
         }
         if (window.__embeddedMessagingLoaded) {
+          embeddedInitState = 'ready';
           embedStatus.textContent = 'Embedded Messaging initialized.';
           setDiagnostics('Bootstrap already loaded.');
           return;
         }
 
+        embeddedInitState = 'loading';
         embedStatus.textContent = 'Loading Embedded Messaging...';
         setDiagnostics('Loading bootstrap script.');
         window.initEmbeddedMessaging = function initEmbeddedMessaging() {
@@ -720,9 +726,11 @@
               }
             );
             window.__embeddedMessagingLoaded = true;
+            embeddedInitState = 'ready';
             embedStatus.textContent = 'Embedded Messaging initialized.';
             setDiagnostics('embeddedservice_bootstrap.init succeeded.');
           } catch (err) {
+            embeddedInitState = 'init-error';
             embedStatus.textContent = `Embedded Messaging error: ${err.message || 'init failed'}`;
             setDiagnostics(`Init failed: ${err.message || 'unknown error'}`);
           }
@@ -738,10 +746,25 @@
           }
         };
         script.onerror = () => {
+          embeddedInitState = 'script-error';
           embedStatus.textContent = 'Failed to load Embedded Messaging script.';
           setDiagnostics('Bootstrap script failed to load.');
         };
         document.body.appendChild(script);
+      }
+
+      async function waitForNativeChatReady(timeoutMs = 4500) {
+        const started = Date.now();
+        while (Date.now() - started < timeoutMs) {
+          const utilApi =
+            window.embeddedservice_bootstrap &&
+            window.embeddedservice_bootstrap.utilAPI;
+          if (utilApi && typeof utilApi.launchChat === 'function') {
+            return utilApi;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 180));
+        }
+        return null;
       }
 
       function launchEmbeddedMessaging() {
@@ -765,29 +788,29 @@
         }
       }
 
-      function openSupportOverlay() {
+      async function openSupportOverlay() {
         supportOverlay.classList.add('open');
         document.body.style.overflow = 'hidden';
         overlayChatLog.innerHTML = '';
         const tenantName = currentTenant && currentTenant.companyName ? currentTenant.companyName : 'your customer';
         addOverlayChatMessage('bot', `Concierge ready for ${tenantName}.`);
-        const utilApi =
+        let utilApi =
           window.embeddedservice_bootstrap &&
           window.embeddedservice_bootstrap.utilAPI;
-        if (utilApi && typeof utilApi.launchChat === 'function') {
-          overlayEmbedStatus.textContent = 'Launching native Salesforce chat widget...';
-          try {
-            utilApi.launchChat();
-            overlayEmbedStatus.textContent = 'Native Salesforce chat launched.';
-          } catch (error) {
-            overlayEmbedStatus.textContent = `Native launch error: ${error.message}`;
+        if ((!utilApi || typeof utilApi.launchChat !== 'function') && currentTenant) {
+          if (embeddedInitState !== 'loading') {
+            initEmbeddedMessaging(currentTenant);
           }
+          utilApi = await waitForNativeChatReady(3500);
+        }
+        if (utilApi && typeof utilApi.launchChat === 'function') {
+          launchOverlayNativeChat();
         } else if (currentTenant && currentTenant.agentforce && currentTenant.agentforce.embedUrl) {
           overlayAgentforceFrame.src = currentTenant.agentforce.embedUrl;
           overlayEmbedStatus.textContent = 'Using iframe embed URL.';
         } else {
           overlayAgentforceFrame.removeAttribute('src');
-          overlayEmbedStatus.textContent = 'Native widget unavailable right now. Use grounded fallback chat or click Launch Native Salesforce Chat.';
+          overlayEmbedStatus.textContent = 'Native widget unavailable right now. Click Reinitialize Chat SDK, then Launch Native Salesforce Chat.';
         }
       }
 
@@ -796,20 +819,38 @@
         document.body.style.overflow = '';
       }
 
-      function launchOverlayNativeChat() {
+      async function launchOverlayNativeChat() {
         try {
-          const utilApi =
+          let utilApi =
             window.embeddedservice_bootstrap &&
             window.embeddedservice_bootstrap.utilAPI;
+          if (!utilApi || typeof utilApi.launchChat !== 'function') {
+            overlayEmbedStatus.textContent = 'Preparing native chat SDK...';
+            if (currentTenant && embeddedInitState !== 'loading') {
+              initEmbeddedMessaging(currentTenant);
+            }
+            utilApi = await waitForNativeChatReady(6000);
+          }
           if (utilApi && typeof utilApi.launchChat === 'function') {
             utilApi.launchChat();
             overlayEmbedStatus.textContent = 'Native Salesforce chat launched.';
             return;
           }
-          overlayEmbedStatus.textContent = 'Native widget unavailable in this session.';
+          overlayEmbedStatus.textContent = `Native widget unavailable in this session (state: ${embeddedInitState}).`;
         } catch (error) {
           overlayEmbedStatus.textContent = `Native launch failed: ${error.message}`;
         }
+      }
+
+      async function reinitializeOverlayNativeChat() {
+        if (!currentTenant) return;
+        resetEmbeddedMessaging();
+        const utilApi = await waitForNativeChatReady(6000);
+        if (utilApi) {
+          overlayEmbedStatus.textContent = 'Chat SDK reinitialized and ready.';
+          return;
+        }
+        overlayEmbedStatus.textContent = `Chat SDK still unavailable (state: ${embeddedInitState}).`;
       }
 
       async function sendOverlaySupportMessage() {
@@ -1124,6 +1165,7 @@
       if (closeSupportOverlayBtn) closeSupportOverlayBtn.addEventListener('click', closeSupportOverlay);
       if (overlaySendBtn) overlaySendBtn.addEventListener('click', sendOverlaySupportMessage);
       if (overlayLaunchNativeBtn) overlayLaunchNativeBtn.addEventListener('click', launchOverlayNativeChat);
+      if (overlayReinitBtn) overlayReinitBtn.addEventListener('click', reinitializeOverlayNativeChat);
       urlInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') buildExperience();
       });
