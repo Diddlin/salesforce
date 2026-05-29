@@ -255,6 +255,25 @@
       .chat-input button {
         min-width: 110px;
       }
+      .support-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 8px 0 10px;
+      }
+      .support-actions button {
+        min-width: 0;
+        width: auto;
+      }
+      .support-diagnostics {
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 10px;
+        padding: 10px;
+        font-size: 12px;
+        color: #bfdbfe;
+        background: rgba(2, 6, 23, 0.55);
+        margin-bottom: 10px;
+      }
       .hidden {
         display: none;
       }
@@ -360,6 +379,13 @@
               <h3>WINT TMT Support Agent</h3>
               <p id="agentNote" class="muted"></p>
               <p id="embedStatus" class="muted"></p>
+              <div class="support-actions">
+                <button id="launchEmbeddedBtn" type="button">Launch Salesforce Chat</button>
+                <button id="resetEmbeddedBtn" type="button">Reset Embed</button>
+              </div>
+              <div id="supportDiagnostics" class="support-diagnostics">
+                Diagnostics: waiting for config.
+              </div>
               <div id="agentforceEmbed" class="chat-shell hidden">
                 <div class="chat-header">Embedded Agentforce Concierge</div>
                 <iframe
@@ -414,6 +440,9 @@
       const agentforceFrame = document.getElementById('agentforceFrame');
       const chatHeader = document.getElementById('chatHeader');
       const embedStatus = document.getElementById('embedStatus');
+      const supportDiagnostics = document.getElementById('supportDiagnostics');
+      const launchEmbeddedBtn = document.getElementById('launchEmbeddedBtn');
+      const resetEmbeddedBtn = document.getElementById('resetEmbeddedBtn');
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
       const modeInput = document.getElementById('modeInput');
@@ -422,9 +451,14 @@
       const navButtons = document.querySelectorAll('.tab-btn');
       let currentTenant = null;
       let chatHistory = [];
+      let embeddedConfig = null;
 
       function setStatus(message) {
         statusEl.textContent = message;
+      }
+
+      function setDiagnostics(message) {
+        supportDiagnostics.textContent = `Diagnostics: ${message}`;
       }
 
       function addChatMessage(role, text) {
@@ -437,16 +471,20 @@
 
       function initEmbeddedMessaging(config) {
         const msgCfg = config && config.agentforce && config.agentforce.embeddedMessaging;
+        embeddedConfig = msgCfg || null;
         if (!msgCfg || !msgCfg.bootstrapUrl) {
           embedStatus.textContent = 'Embedded Messaging not configured.';
+          setDiagnostics('No embedded messaging config present.');
           return;
         }
         if (window.__embeddedMessagingLoaded) {
           embedStatus.textContent = 'Embedded Messaging initialized.';
+          setDiagnostics('Bootstrap already loaded.');
           return;
         }
 
         embedStatus.textContent = 'Loading Embedded Messaging...';
+        setDiagnostics('Loading bootstrap script.');
         window.initEmbeddedMessaging = function initEmbeddedMessaging() {
           try {
             embeddedservice_bootstrap.settings.language = 'en_US';
@@ -460,8 +498,10 @@
             );
             window.__embeddedMessagingLoaded = true;
             embedStatus.textContent = 'Embedded Messaging initialized.';
+            setDiagnostics('embeddedservice_bootstrap.init succeeded.');
           } catch (err) {
             embedStatus.textContent = `Embedded Messaging error: ${err.message || 'init failed'}`;
+            setDiagnostics(`Init failed: ${err.message || 'unknown error'}`);
           }
         };
 
@@ -469,14 +509,52 @@
         script.src = msgCfg.bootstrapUrl;
         script.async = true;
         script.onload = () => {
+          setDiagnostics('Bootstrap script loaded.');
           if (typeof window.initEmbeddedMessaging === 'function') {
             window.initEmbeddedMessaging();
           }
         };
         script.onerror = () => {
           embedStatus.textContent = 'Failed to load Embedded Messaging script.';
+          setDiagnostics('Bootstrap script failed to load.');
         };
         document.body.appendChild(script);
+      }
+
+      function launchEmbeddedMessaging() {
+        try {
+          const utilApi =
+            window.embeddedservice_bootstrap &&
+            window.embeddedservice_bootstrap.utilAPI;
+          if (utilApi && typeof utilApi.launchChat === 'function') {
+            utilApi.launchChat();
+            setDiagnostics('launchChat invoked successfully.');
+            return;
+          }
+          if (embeddedConfig && embeddedConfig.siteUrl) {
+            window.open(embeddedConfig.siteUrl, '_blank', 'noopener,noreferrer');
+            setDiagnostics('utilAPI unavailable; opened deployment site in new tab.');
+            return;
+          }
+          setDiagnostics('Cannot launch: utilAPI unavailable and no site URL.');
+        } catch (error) {
+          setDiagnostics(`Launch failed: ${error.message}`);
+        }
+      }
+
+      function resetEmbeddedMessaging() {
+        window.__embeddedMessagingLoaded = false;
+        const scripts = [...document.querySelectorAll('script[src]')];
+        scripts.forEach((s) => {
+          if (embeddedConfig && s.src === embeddedConfig.bootstrapUrl) {
+            s.remove();
+          }
+        });
+        embedStatus.textContent = 'Embed reset. Re-initializing...';
+        setDiagnostics('Removed bootstrap script; reinitializing.');
+        if (currentTenant) {
+          initEmbeddedMessaging(currentTenant);
+        }
       }
 
       function renderTenant(config) {
@@ -698,6 +776,8 @@
         builderShell.classList.toggle('builder-hidden');
       });
       sendBtn.addEventListener('click', sendSupportMessage);
+      launchEmbeddedBtn.addEventListener('click', launchEmbeddedMessaging);
+      resetEmbeddedBtn.addEventListener('click', resetEmbeddedMessaging);
       urlInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') buildExperience();
       });
