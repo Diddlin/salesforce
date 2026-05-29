@@ -294,6 +294,12 @@ function seededHexColor(seed, offset = 0) {
   return `#${hex}`;
 }
 
+const VISUAL_ARCHETYPES = {
+  enterprise: { surface: '#0a1020', text: '#e2e8f0' },
+  consumer: { surface: '#1a1027', text: '#f8fafc' },
+  startup: { surface: '#071a16', text: '#ecfeff' }
+};
+
 function pickIndustry(terms) {
   const joined = terms.join(' ');
   if (/health|patient|clinic|medical|care/.test(joined)) return 'Healthcare';
@@ -622,6 +628,23 @@ function buildTenantConfig(seedUrl, crawlResult) {
   };
 }
 
+function applyVisualArchetype(config, archetype) {
+  const selected = VISUAL_ARCHETYPES[archetype];
+  if (!selected) return config;
+  return {
+    ...config,
+    theme: {
+      ...config.theme,
+      surface: selected.surface,
+      text: selected.text
+    },
+    brand: {
+      ...config.brand,
+      archetype
+    }
+  };
+}
+
 function buildGroundingBrief(config) {
   const snippets = (config.grounding?.snippets || [])
     .map((s) => `${s.title || 'Untitled'}: ${s.description || ''} (${s.url})`)
@@ -672,6 +695,7 @@ async function handleReskin(req, res) {
     const body = await readBody(req);
     const customerUrl = pickCustomerUrl(body);
     const mode = body.mode === 'deep' ? 'deep' : 'light';
+    const archetype = String(body.archetype || 'auto');
     if (!customerUrl) {
       sendJson(res, 400, {
         error:
@@ -681,7 +705,18 @@ async function handleReskin(req, res) {
     }
 
     const crawlResult = await crawlSite(customerUrl, mode);
-    const config = buildTenantConfig(customerUrl, crawlResult);
+    let config = buildTenantConfig(customerUrl, crawlResult);
+    if (archetype !== 'auto') {
+      config = applyVisualArchetype(config, archetype);
+    } else {
+      const autoArchetype =
+        config.industry === 'Financial Services' || config.industry === 'Healthcare'
+          ? 'enterprise'
+          : config.industry === 'Retail' || config.industry === 'Travel & Hospitality'
+            ? 'consumer'
+            : 'startup';
+      config = applyVisualArchetype(config, autoArchetype);
+    }
     tenantCache.set(config.tenantId, config);
     sendJson(res, 200, config);
   } catch (error) {

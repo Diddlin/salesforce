@@ -149,7 +149,7 @@
       .control-row {
         display: grid;
         gap: 10px;
-        grid-template-columns: 1fr 1fr 190px auto;
+        grid-template-columns: 1fr 1fr 170px 170px auto;
       }
       input,
       button,
@@ -392,6 +392,12 @@
               <option value="deep">Deep Visual Mode</option>
               <option value="light">Light Mode</option>
             </select>
+            <select id="archetypeInput" aria-label="Visual archetype">
+              <option value="auto">Auto Archetype</option>
+              <option value="enterprise">Enterprise</option>
+              <option value="consumer">Consumer</option>
+              <option value="startup">Startup</option>
+            </select>
             <button id="buildBtn">Build Experience</button>
           </div>
           <p id="status" class="status">Ready.</p>
@@ -511,6 +517,7 @@
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
       const modeInput = document.getElementById('modeInput');
+      const archetypeInput = document.getElementById('archetypeInput');
       const chatInput = document.getElementById('chatInput');
       const chatLog = document.getElementById('chatLog');
       const reskinReport = document.getElementById('reskinReport');
@@ -655,7 +662,7 @@
         document.getElementById('challengeSummary').textContent = config.challengeSummary || '';
         document.getElementById('industry').textContent = config.industry || 'General Business';
         document.getElementById('agentNote').textContent = config.agentforce.notes;
-        reskinReport.textContent = `Reskin report: ${config.grounding?.crawlMode || 'light'} mode | ${config.grounding?.crawlPages || 0} pages | fidelity ${config.grounding?.fidelity || 'low'} | signals ${config.grounding?.signalStrength || 0}/6`;
+        reskinReport.textContent = `Reskin report: ${config.grounding?.crawlMode || 'light'} mode | ${config.grounding?.crawlPages || 0} pages | fidelity ${config.grounding?.fidelity || 'low'} | signals ${config.grounding?.signalStrength || 0}/6 | archetype ${(config.brand && config.brand.archetype) || 'auto'}`;
         if (config.agentforce && config.agentforce.embedUrl) {
           agentforceFrame.src = config.agentforce.embedUrl;
           agentforceEmbed.classList.remove('hidden');
@@ -783,7 +790,11 @@
         buildBtn.disabled = true;
         setStatus('Generating smooth customer-tailored experience...');
         try {
-          const payload = { url, mode: modeInput.value };
+          const payload = {
+            url,
+            mode: modeInput.value,
+            archetype: archetypeInput.value
+          };
           if (fieldPathInput.value.trim()) payload.fieldPath = fieldPathInput.value.trim();
           const response = await fetch('/api/reskin', {
             method: 'POST',
