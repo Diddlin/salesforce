@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Heroku Test Site</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      .card {
+        background: #111827;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 680px;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      code {
+        background: #1e293b;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Heroku + GitHub connection works</h1>
+      <p>This test page is deployed from your local git repo.</p>
+      <p>
+        App: <code>david-test</code><br />
+        Repo: <code>Diddlin/salesforce</code>
+      </p>
+      <p>If you can see this page, your deployment pipeline is working.</p>
+    </main>
+  </body>
+</html>
