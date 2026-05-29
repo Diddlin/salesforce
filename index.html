@@ -28,11 +28,42 @@
         background-size: cover, auto, auto, auto;
         background-position: center center, center, center, center;
         background-attachment: fixed;
+        overflow-x: hidden;
+      }
+      .bg-orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(32px);
+        opacity: 0.45;
+        pointer-events: none;
+        z-index: 0;
+        animation: floatOrb 12s ease-in-out infinite;
+      }
+      .bg-orb.one {
+        width: 320px;
+        height: 320px;
+        background: rgba(56, 189, 248, 0.38);
+        top: -80px;
+        left: -60px;
+      }
+      .bg-orb.two {
+        width: 260px;
+        height: 260px;
+        background: rgba(99, 102, 241, 0.36);
+        bottom: -70px;
+        right: -50px;
+        animation-delay: 1.8s;
+      }
+      @keyframes floatOrb {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        50% { transform: translateY(-18px) translateX(12px); }
       }
       .wrap {
         max-width: 1160px;
         margin: 0 auto;
         padding: 26px;
+        position: relative;
+        z-index: 1;
       }
       .glass {
         background: rgba(10, 19, 38, 0.72);
@@ -76,6 +107,35 @@
         border-radius: 999px;
         padding: 3px 10px;
         background: rgba(8, 16, 30, 0.7);
+      }
+      .vibe-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0 0;
+      }
+      .vibe-row span {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 999px;
+        padding: 3px 9px;
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .cta-pill {
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        color: #bae6fd;
+        border-radius: 999px;
+        font-size: 12px;
+        padding: 4px 10px;
+        background: rgba(2, 132, 199, 0.16);
       }
       .hero p {
         margin: 0;
@@ -306,6 +366,8 @@
     </style>
   </head>
   <body>
+    <div class="bg-orb one"></div>
+    <div class="bg-orb two"></div>
     <div class="wrap">
       <section id="builderShell" class="hero glass">
         <div class="brand-top">
@@ -314,6 +376,8 @@
         </div>
         <p>Tailored customer demo generation with lightweight grounding and live support conversation.</p>
         <div id="siteNav" class="site-nav"></div>
+        <div id="vibeRow" class="vibe-row"></div>
+        <div id="ctaRow" class="cta-row"></div>
         <div class="control-grid">
           <label for="urlInput">Customer Website URL</label>
           <div class="control-row">
@@ -324,8 +388,8 @@
               placeholder="Optional field path (e.g. nolan_baily.externalKnowledgeUrl)"
             />
             <select id="modeInput" aria-label="Reskin mode">
-              <option value="light">Light Mode</option>
               <option value="deep">Deep Visual Mode</option>
+              <option value="light">Light Mode</option>
             </select>
             <button id="buildBtn">Build Experience</button>
           </div>
@@ -619,6 +683,21 @@
           const span = document.createElement('span');
           span.textContent = item;
           siteNav.appendChild(span);
+        });
+        const vibeRow = document.getElementById('vibeRow');
+        vibeRow.innerHTML = '';
+        ((config.brand && config.brand.vibeTags) || []).forEach((tag) => {
+          const span = document.createElement('span');
+          span.textContent = tag;
+          vibeRow.appendChild(span);
+        });
+        const ctaRow = document.getElementById('ctaRow');
+        ctaRow.innerHTML = '';
+        ((config.brand && config.brand.ctaLabels) || []).slice(0, 6).forEach((cta) => {
+          const chip = document.createElement('span');
+          chip.className = 'cta-pill';
+          chip.textContent = cta;
+          ctaRow.appendChild(chip);
         });
 
         const websiteLink = document.getElementById('websiteLink');

@@ -25,7 +25,7 @@ const EMBEDDED_MESSAGING_BOOTSTRAP_URL =
   'https://storm-971f7eb7643997.my.site.com/ESWTechIDOWebSDRDeplo1762196766193/assets/js/bootstrap.min.js';
 const CRAWL_PROFILES = {
   light: { maxPages: 3, maxLinksPerPage: 3, maxCssFiles: 0, timeoutMs: 7000 },
-  deep: { maxPages: 8, maxLinksPerPage: 8, maxCssFiles: 6, timeoutMs: 9000 }
+  deep: { maxPages: 15, maxLinksPerPage: 12, maxCssFiles: 12, timeoutMs: 12000 }
 };
 const FALLBACK_FIELD_PATHS = [
   DEFAULT_FIELD_PATH,
@@ -190,6 +190,32 @@ function extractNavItems(html, maxItems = 6) {
   while ((match = regex.exec(html)) && out.length < maxItems) {
     const text = stripHtmlText(match[1] || '').trim();
     if (text.length >= 3 && text.length <= 28 && !out.includes(text)) {
+      out.push(text);
+    }
+  }
+  return out;
+}
+
+function extractButtonLabels(html, maxItems = 8) {
+  const out = [];
+  const regex = /<(button|a)[^>]*>([\s\S]*?)<\/(button|a)>/gi;
+  let match;
+  while ((match = regex.exec(html)) && out.length < maxItems) {
+    const text = stripHtmlText(match[2] || '').trim();
+    if (text.length >= 3 && text.length <= 40 && !out.includes(text)) {
+      out.push(text);
+    }
+  }
+  return out;
+}
+
+function extractHeadings(html, maxItems = 6) {
+  const out = [];
+  const regex = /<h[12][^>]*>([\s\S]*?)<\/h[12]>/gi;
+  let match;
+  while ((match = regex.exec(html)) && out.length < maxItems) {
+    const text = stripHtmlText(match[1] || '').trim();
+    if (text.length >= 6 && text.length <= 110 && !out.includes(text)) {
       out.push(text);
     }
   }
@@ -406,6 +432,13 @@ async function crawlSite(seedUrl, mode = 'light') {
   const pages = [];
   const visited = new Set();
   const queue = [seedUrl];
+  if (mode === 'deep') {
+    const origin = new URL(seedUrl).origin;
+    const canonical = ['/about', '/products', '/solutions', '/pricing', '/support', '/contact', '/blog'];
+    for (const p of canonical) {
+      queue.push(`${origin}${p}`);
+    }
+  }
   while (queue.length > 0 && pages.length < profile.maxPages) {
     const current = queue.shift();
     if (!current || visited.has(current)) continue;
@@ -490,8 +523,14 @@ function buildTenantConfig(seedUrl, crawlResult) {
     `Create a tailored ${industry.toLowerCase()} experience using web-grounded context and embedded support.`;
   const heroTitle = extractHeroHeading(firstHtml) || `Welcome to ${companyName}`;
   const navItems = extractNavItems(firstHtml);
+  const ctaLabels = extractButtonLabels(firstHtml);
+  const headings = extractHeadings(firstHtml);
   const heroImage = extractOgImage(firstHtml);
   const logoUrl = heroImage || `${origin.origin}/favicon.ico`;
+  const vibeTags = [
+    ...terms.slice(0, 4),
+    ...(headings[0] ? [headings[0].split(' ').slice(0, 3).join(' ')] : [])
+  ].filter(Boolean);
 
   return {
     tenantId: safeSlug(companyName || origin.hostname),
@@ -527,7 +566,10 @@ function buildTenantConfig(seedUrl, crawlResult) {
       navItems: navItems.length ? navItems : ['Home', 'Solutions', 'Support', 'About'],
       heroImage,
       logoUrl,
-      fonts: allFonts.slice(0, 4)
+      fonts: allFonts.slice(0, 4),
+      headings,
+      ctaLabels,
+      vibeTags
     },
     agentforce: {
       orgAlias: 'wint-tmt',
