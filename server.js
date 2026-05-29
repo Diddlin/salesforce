@@ -8,6 +8,7 @@ const indexPath = path.join(__dirname, 'index.html');
 const DEFAULT_FIELD_PATH =
   process.env.WEB_AGENT_CUSTOMER_WEBSITE_FIELD ||
   'nolan_baily.customerWebsite';
+const AGENT_SUPPORT_ENDPOINT = process.env.AGENT_SUPPORT_ENDPOINT || '';
 const FALLBACK_FIELD_PATHS = [
   DEFAULT_FIELD_PATH,
   'nolan_baily.externalKnowledgeUrl',
@@ -399,6 +400,51 @@ function buildTenantConfig(seedUrl, pages) {
   };
 }
 
+function buildGroundingBrief(config) {
+  const snippets = (config.grounding?.snippets || [])
+    .map((s) => `${s.title || 'Untitled'}: ${s.description || ''} (${s.url})`)
+    .join(' | ')
+    .slice(0, 1200);
+  return {
+    companyName: config.companyName,
+    industry: config.industry,
+    topTerms: config.grounding?.topTerms || [],
+    challengeSummary: config.challengeSummary || '',
+    snippets
+  };
+}
+
+function localSupportReply(config, message) {
+  const lower = String(message || '').toLowerCase();
+  const terms = config.grounding?.topTerms || [];
+  const packs = config.packages || [];
+
+  if (lower.includes('next step') || lower.includes('what should')) {
+    return `For ${config.companyName}, start with "${packs[0]?.name || 'Fast Start'}" and lead with ${terms.slice(0, 2).join(', ') || 'customer priorities'}. Then transition to support deflection with Agentforce using grounded snippets from the customer site.`;
+  }
+  if (lower.includes('agent') || lower.includes('support')) {
+    return `Use WINT TMT Agentforce as the support layer: pre-seed context with ${terms.slice(0, 3).join(', ') || 'top customer themes'}, then handle Q&A and case guidance in chat.`;
+  }
+  if (lower.includes('package') || lower.includes('pricing')) {
+    return `Recommended package path: 1) ${packs[0]?.name || 'Fast Start'}, 2) ${packs[1]?.name || 'Support Assist'}, 3) ${packs[2]?.name || 'Expansion'}. This shows quick value, operational support, and scale.`;
+  }
+  return `Based on ${config.companyName}'s site signals (${terms.slice(0, 4).join(', ') || 'general business context'}), position a headless experience with fast branding, grounded support, and a clear rollout path tied to measurable KPIs.`;
+}
+
+function extractSupportText(payload) {
+  if (!payload) return '';
+  if (typeof payload === 'string') return payload;
+  return (
+    payload.reply ||
+    payload.response ||
+    payload.message ||
+    payload.outputText ||
+    payload.text ||
+    payload.answer ||
+    ''
+  );
+}
+
 async function handleReskin(req, res) {
   try {
     const body = await readBody(req);
@@ -420,6 +466,65 @@ async function handleReskin(req, res) {
   }
 }
 
+async function handleSupport(req, res) {
+  try {
+    const body = await readBody(req);
+    const tenantId = body.tenantId;
+    const message = String(body.message || '').trim();
+    if (!tenantId || !message) {
+      sendJson(res, 400, { error: 'tenantId and message are required.' });
+      return;
+    }
+
+    const config = tenantCache.get(tenantId);
+    if (!config) {
+      sendJson(res, 404, { error: 'Tenant not found.' });
+      return;
+    }
+
+    const groundingBrief = buildGroundingBrief(config);
+
+    if (AGENT_SUPPORT_ENDPOINT) {
+      try {
+        const upstream = await fetch(AGENT_SUPPORT_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tenantId,
+            message,
+            history: body.history || [],
+            grounding: groundingBrief,
+            orgAlias: config.agentforce?.orgAlias || 'wint-tmt'
+          })
+        });
+        const data = await upstream.json().catch(() => ({}));
+        if (upstream.ok) {
+          const reply = extractSupportText(data);
+          if (reply) {
+            sendJson(res, 200, {
+              mode: 'upstream-agent',
+              reply
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        // Fall through to local fallback response.
+      }
+    }
+
+    const fallbackReply = localSupportReply(config, message);
+    sendJson(res, 200, {
+      mode: 'local-fallback',
+      reply: fallbackReply
+    });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message });
+  }
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
@@ -430,6 +535,11 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/api/reskin') {
     handleReskin(req, res);
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/support') {
+    handleSupport(req, res);
     return;
   }
 
@@ -458,4 +568,7 @@ const server = http.createServer((req, res) => {
 server.listen(port, () => {
   console.log(`Headless demo builder listening on port ${port}`);
   console.log(`Web Agent website field path: ${DEFAULT_FIELD_PATH}`);
+  console.log(
+    `Support endpoint mode: ${AGENT_SUPPORT_ENDPOINT ? 'upstream' : 'local-fallback'}`
+  );
 });
