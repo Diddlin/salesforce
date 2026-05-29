@@ -183,6 +183,32 @@
         color: #cbd5e1;
         margin: 8px 0 0;
       }
+      .build-progress {
+        margin-top: 10px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.2);
+        overflow: hidden;
+      }
+      .build-progress > div {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        transition: width 320ms ease;
+      }
+      .hero-stats {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .hero-stats span {
+        font-size: 12px;
+        border-radius: 999px;
+        padding: 3px 9px;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
       .tabs {
         display: flex;
         gap: 10px;
@@ -282,6 +308,9 @@
         background: rgba(11, 92, 171, 0.2);
         border-bottom: 1px solid rgba(148, 163, 184, 0.18);
       }
+      .chat-header strong {
+        color: #7dd3fc;
+      }
       .chat-log {
         height: 340px;
         overflow: auto;
@@ -378,7 +407,9 @@
         <div id="siteNav" class="site-nav"></div>
         <div id="vibeRow" class="vibe-row"></div>
         <div id="ctaRow" class="cta-row"></div>
+        <div id="heroStats" class="hero-stats"></div>
         <p id="reskinReport" class="status">Reskin report: waiting for URL.</p>
+        <div class="build-progress"><div id="buildProgressBar"></div></div>
         <div class="control-grid">
           <label for="urlInput">Customer Website URL</label>
           <div class="control-row">
@@ -521,6 +552,8 @@
       const chatInput = document.getElementById('chatInput');
       const chatLog = document.getElementById('chatLog');
       const reskinReport = document.getElementById('reskinReport');
+      const buildProgressBar = document.getElementById('buildProgressBar');
+      const heroStats = document.getElementById('heroStats');
       const navButtons = document.querySelectorAll('.tab-btn');
       let currentTenant = null;
       let chatHistory = [];
@@ -663,6 +696,16 @@
         document.getElementById('industry').textContent = config.industry || 'General Business';
         document.getElementById('agentNote').textContent = config.agentforce.notes;
         reskinReport.textContent = `Reskin report: ${config.grounding?.crawlMode || 'light'} mode | ${config.grounding?.crawlPages || 0} pages | fidelity ${config.grounding?.fidelity || 'low'} | signals ${config.grounding?.signalStrength || 0}/6 | archetype ${(config.brand && config.brand.archetype) || 'auto'}`;
+        heroStats.innerHTML = '';
+        [
+          `${config.grounding?.crawlPages || 0} pages`,
+          `${config.grounding?.fidelity || 'low'} fidelity`,
+          `${config.industry || 'General'}`
+        ].forEach((t) => {
+          const chip = document.createElement('span');
+          chip.textContent = t;
+          heroStats.appendChild(chip);
+        });
         if (config.agentforce && config.agentforce.embedUrl) {
           agentforceFrame.src = config.agentforce.embedUrl;
           agentforceEmbed.classList.remove('hidden');
@@ -788,8 +831,10 @@
           return;
         }
         buildBtn.disabled = true;
+        buildProgressBar.style.width = '12%';
         setStatus('Generating smooth customer-tailored experience...');
         try {
+          buildProgressBar.style.width = '36%';
           const payload = {
             url,
             mode: modeInput.value,
@@ -801,16 +846,24 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
+          buildProgressBar.style.width = '72%';
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || 'Failed to build experience.');
           renderTenant(data);
+          buildProgressBar.style.width = '100%';
           setStatus(
             `Experience ready (${data.grounding?.crawlMode || modeInput.value} mode, ${data.grounding?.crawlPages || 0} page crawl). Open Get Support to run the agentic flow.`
           );
         } catch (error) {
           setStatus(`Error: ${error.message}`);
+          buildProgressBar.style.width = '0%';
         } finally {
           buildBtn.disabled = false;
+          setTimeout(() => {
+            if (buildProgressBar.style.width === '100%') {
+              buildProgressBar.style.width = '0%';
+            }
+          }, 1000);
         }
       }
 
@@ -848,6 +901,10 @@
           }
           addChatMessage('bot', data.reply || 'No response from support agent.');
           chatHistory.push({ role: 'assistant', content: data.reply || '' });
+          chatHeader.innerHTML =
+            data.mode === 'upstream-agent'
+              ? '<strong>Live Agentforce</strong> Support Experience'
+              : '<strong>Grounded Fallback</strong> Support Experience';
           setStatus(
             data.mode === 'upstream-agent'
               ? 'Connected to WINT TMT support endpoint.'
