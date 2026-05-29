@@ -669,6 +669,8 @@
       let chatHistory = [];
       let embeddedConfig = null;
       let embeddedInitState = 'idle';
+      let embeddedReadyEventSeen = false;
+      let pendingNativeLaunch = false;
 
       function setStatus(message) {
         statusEl.textContent = message;
@@ -694,9 +696,44 @@
         overlayChatLog.scrollTop = overlayChatLog.scrollHeight;
       }
 
+      function getNativeUtilApi() {
+        const utilApi =
+          window.embeddedservice_bootstrap &&
+          window.embeddedservice_bootstrap.utilAPI;
+        if (utilApi && typeof utilApi.launchChat === 'function') return utilApi;
+        return null;
+      }
+
+      function tryLaunchPendingNativeChat() {
+        if (!pendingNativeLaunch) return;
+        const utilApi = getNativeUtilApi();
+        if (!utilApi) return;
+        try {
+          utilApi.launchChat();
+          pendingNativeLaunch = false;
+          overlayEmbedStatus.textContent = 'Native Salesforce chat launched.';
+          setDiagnostics('Native chat launched after ready event.');
+        } catch (error) {
+          overlayEmbedStatus.textContent = `Native launch failed: ${error.message}`;
+        }
+      }
+
+      window.addEventListener('onEmbeddedMessagingReady', () => {
+        embeddedReadyEventSeen = true;
+        embeddedInitState = 'ready';
+        setDiagnostics('Received onEmbeddedMessagingReady event.');
+        if (overlayEmbedStatus) {
+          overlayEmbedStatus.textContent = pendingNativeLaunch
+            ? 'SDK ready. Launching chat...'
+            : 'SDK ready for native launch.';
+        }
+        tryLaunchPendingNativeChat();
+      });
+
       function initEmbeddedMessaging(config) {
         const msgCfg = config && config.agentforce && config.agentforce.embeddedMessaging;
         embeddedConfig = msgCfg || null;
+        embeddedReadyEventSeen = false;
         if (!msgCfg || !msgCfg.bootstrapUrl) {
           embeddedInitState = 'missing-config';
           embedStatus.textContent = 'Embedded Messaging not configured.';
@@ -755,10 +792,8 @@
       async function waitForNativeChatReady(timeoutMs = 4500) {
         const started = Date.now();
         while (Date.now() - started < timeoutMs) {
-          const utilApi =
-            window.embeddedservice_bootstrap &&
-            window.embeddedservice_bootstrap.utilAPI;
-          if (utilApi && typeof utilApi.launchChat === 'function') {
+          const utilApi = getNativeUtilApi();
+          if (utilApi) {
             return utilApi;
           }
           await new Promise((resolve) => setTimeout(resolve, 180));
@@ -820,29 +855,33 @@
 
       async function launchOverlayNativeChat() {
         try {
-          let utilApi =
-            window.embeddedservice_bootstrap &&
-            window.embeddedservice_bootstrap.utilAPI;
-          if (!utilApi || typeof utilApi.launchChat !== 'function') {
+          let utilApi = getNativeUtilApi();
+          if (!utilApi) {
+            pendingNativeLaunch = true;
             overlayEmbedStatus.textContent = 'Preparing native chat SDK...';
             if (currentTenant && embeddedInitState !== 'loading') {
               initEmbeddedMessaging(currentTenant);
             }
             utilApi = await waitForNativeChatReady(6000);
           }
-          if (utilApi && typeof utilApi.launchChat === 'function') {
+          if (utilApi) {
             utilApi.launchChat();
+            pendingNativeLaunch = false;
             overlayEmbedStatus.textContent = 'Native Salesforce chat launched.';
             return;
           }
-          overlayEmbedStatus.textContent = `Native widget unavailable in this session (state: ${embeddedInitState}).`;
+          overlayEmbedStatus.textContent = embeddedReadyEventSeen
+            ? 'SDK ready event fired, but chat API unavailable. Check Salesforce deployment settings.'
+            : `Native widget unavailable in this session (state: ${embeddedInitState}).`;
         } catch (error) {
+          pendingNativeLaunch = false;
           overlayEmbedStatus.textContent = `Native launch failed: ${error.message}`;
         }
       }
 
       async function reinitializeOverlayNativeChat() {
         if (!currentTenant) return;
+        pendingNativeLaunch = false;
         resetEmbeddedMessaging();
         const utilApi = await waitForNativeChatReady(6000);
         if (utilApi) {
