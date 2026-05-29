@@ -258,6 +258,18 @@
       .hidden {
         display: none;
       }
+      .builder-hidden {
+        display: none;
+      }
+      .edit-builder-btn {
+        position: fixed;
+        right: 14px;
+        bottom: 14px;
+        z-index: 50;
+        min-width: 0;
+        width: auto;
+        padding: 10px 12px;
+      }
       a {
         color: #7dd3fc;
       }
@@ -276,7 +288,7 @@
   </head>
   <body>
     <div class="wrap">
-      <section class="hero glass">
+      <section id="builderShell" class="hero glass">
         <div class="brand-top">
           <img id="brandLogo" class="brand-logo" alt="Customer logo" />
           <h1 id="heroTitle">Headless SE Demo Studio</h1>
@@ -347,10 +359,18 @@
             <article class="card glass">
               <h3>WINT TMT Support Agent</h3>
               <p id="agentNote" class="muted"></p>
+              <div id="agentforceEmbed" class="chat-shell hidden">
+                <div class="chat-header">Embedded Agentforce Concierge</div>
+                <iframe
+                  id="agentforceFrame"
+                  title="Embedded Agentforce Concierge"
+                  style="width:100%; height:380px; border:0; background:#fff;"
+                ></iframe>
+              </div>
               <p><strong>Starter prompts</strong></p>
               <ul id="starterPrompts"></ul>
               <div class="chat-shell">
-                <div class="chat-header">Agentic Support Experience</div>
+                <div id="chatHeader" class="chat-header">Agentic Support Experience</div>
                 <div id="chatLog" class="chat-log"></div>
                 <div class="chat-input">
                   <input id="chatInput" type="text" placeholder="Ask for next-best action, package framing, objections..." />
@@ -378,12 +398,20 @@
         </section>
       </section>
     </div>
+    <button id="editBuilderBtn" class="edit-builder-btn hidden" type="button">
+      Edit Builder
+    </button>
 
     <script>
       const buildBtn = document.getElementById('buildBtn');
       const sendBtn = document.getElementById('sendBtn');
       const statusEl = document.getElementById('status');
       const resultEl = document.getElementById('result');
+      const builderShell = document.getElementById('builderShell');
+      const editBuilderBtn = document.getElementById('editBuilderBtn');
+      const agentforceEmbed = document.getElementById('agentforceEmbed');
+      const agentforceFrame = document.getElementById('agentforceFrame');
+      const chatHeader = document.getElementById('chatHeader');
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
       const modeInput = document.getElementById('modeInput');
@@ -437,6 +465,15 @@
         document.getElementById('challengeSummary').textContent = config.challengeSummary || '';
         document.getElementById('industry').textContent = config.industry || 'General Business';
         document.getElementById('agentNote').textContent = config.agentforce.notes;
+        if (config.agentforce && config.agentforce.embedUrl) {
+          agentforceFrame.src = config.agentforce.embedUrl;
+          agentforceEmbed.classList.remove('hidden');
+          chatHeader.textContent = 'Support Copilot (Grounded Fallback Chat)';
+        } else {
+          agentforceEmbed.classList.add('hidden');
+          agentforceFrame.removeAttribute('src');
+          chatHeader.textContent = 'Agentic Support Experience';
+        }
         document.getElementById('heroTitle').textContent =
           (config.brand && config.brand.heroTitle) || `${config.companyName} Headless 360`;
 
@@ -523,6 +560,8 @@
         });
 
         resultEl.classList.remove('hidden');
+        builderShell.classList.add('builder-hidden');
+        editBuilderBtn.classList.remove('hidden');
       }
 
       async function buildExperience() {
@@ -605,6 +644,9 @@
       }
 
       buildBtn.addEventListener('click', buildExperience);
+      editBuilderBtn.addEventListener('click', () => {
+        builderShell.classList.toggle('builder-hidden');
+      });
       sendBtn.addEventListener('click', sendSupportMessage);
       urlInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') buildExperience();

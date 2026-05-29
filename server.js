@@ -9,6 +9,7 @@ const DEFAULT_FIELD_PATH =
   process.env.WEB_AGENT_CUSTOMER_WEBSITE_FIELD ||
   'nolan_baily.customerWebsite';
 const AGENT_SUPPORT_ENDPOINT = process.env.AGENT_SUPPORT_ENDPOINT || '';
+const AGENTFORCE_EMBED_URL = process.env.AGENTFORCE_EMBED_URL || '';
 const CRAWL_PROFILES = {
   light: { maxPages: 3, maxLinksPerPage: 3, maxCssFiles: 0, timeoutMs: 7000 },
   deep: { maxPages: 8, maxLinksPerPage: 8, maxCssFiles: 6, timeoutMs: 9000 }
@@ -518,6 +519,7 @@ function buildTenantConfig(seedUrl, crawlResult) {
     agentforce: {
       orgAlias: 'wint-tmt',
       mode: 'embedded-support',
+      embedUrl: AGENTFORCE_EMBED_URL,
       starterPrompts: [
         `Summarize ${companyName || 'this customer'} priorities from grounding context.`,
         `How can I position Agentforce support for ${industry} use cases?`,
@@ -701,5 +703,8 @@ server.listen(port, () => {
   console.log(`Web Agent website field path: ${DEFAULT_FIELD_PATH}`);
   console.log(
     `Support endpoint mode: ${AGENT_SUPPORT_ENDPOINT ? 'upstream' : 'local-fallback'}`
+  );
+  console.log(
+    `Agentforce embed mode: ${AGENTFORCE_EMBED_URL ? 'iframe' : 'not-configured'}`
   );
 });
