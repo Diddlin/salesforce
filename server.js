@@ -9,6 +9,10 @@ const DEFAULT_FIELD_PATH =
   process.env.WEB_AGENT_CUSTOMER_WEBSITE_FIELD ||
   'nolan_baily.customerWebsite';
 const AGENT_SUPPORT_ENDPOINT = process.env.AGENT_SUPPORT_ENDPOINT || '';
+const CRAWL_PROFILES = {
+  light: { maxPages: 3, maxLinksPerPage: 3, maxCssFiles: 0, timeoutMs: 7000 },
+  deep: { maxPages: 8, maxLinksPerPage: 8, maxCssFiles: 6, timeoutMs: 9000 }
+};
 const FALLBACK_FIELD_PATHS = [
   DEFAULT_FIELD_PATH,
   'nolan_baily.externalKnowledgeUrl',
@@ -314,6 +318,27 @@ async function fetchHtml(url, timeoutMs = 7000) {
   }
 }
 
+async function fetchText(url, timeoutMs = 7000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Salesforce-Headless-Demo-Builder/1.0 (+https://herokuapp.com)'
+      },
+      signal: controller.signal,
+      redirect: 'follow'
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status}`);
+    }
+    return (await response.text()).slice(0, 300_000);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function extractInternalLinks(html, baseUrl, maxLinks = 3) {
   const links = [];
   const regex = /<a[^>]+href=["']([^"']+)["']/gi;
@@ -336,31 +361,77 @@ function extractInternalLinks(html, baseUrl, maxLinks = 3) {
   return links;
 }
 
-async function lightweightCrawl(seedUrl) {
+function extractStylesheetLinks(html, baseUrl, maxLinks = 6) {
+  const out = [];
+  const regex = /<link[^>]+rel=["'][^"']*stylesheet[^"']*["'][^>]+href=["']([^"']+)["']/gi;
+  let match;
+  while ((match = regex.exec(html)) && out.length < maxLinks) {
+    try {
+      const link = new URL(match[1], baseUrl);
+      if (!out.includes(link.toString())) out.push(link.toString());
+    } catch (e) {
+      // ignore
+    }
+  }
+  return out;
+}
+
+function extractFontFamilies(cssText, maxFonts = 8) {
+  const fonts = [];
+  const regex = /font-family\s*:\s*([^;]+);/gi;
+  let match;
+  while ((match = regex.exec(cssText)) && fonts.length < maxFonts) {
+    const first = match[1].split(',')[0].replace(/["']/g, '').trim();
+    if (first && !fonts.includes(first)) fonts.push(first);
+  }
+  return fonts;
+}
+
+async function crawlSite(seedUrl, mode = 'light') {
+  const profile = CRAWL_PROFILES[mode] || CRAWL_PROFILES.light;
   const pages = [];
   const visited = new Set();
   const queue = [seedUrl];
-  while (queue.length > 0 && pages.length < 3) {
+  while (queue.length > 0 && pages.length < profile.maxPages) {
     const current = queue.shift();
     if (!current || visited.has(current)) continue;
     visited.add(current);
     try {
-      const html = await fetchHtml(current);
+      const html = await fetchHtml(current, profile.timeoutMs);
       const title = extractTagText(html, /<title[^>]*>([^<]*)<\/title>/i);
       const description = extractMeta(html, 'description');
       const text = stripHtmlText(html);
       const colors = extractColors(html);
+      const cssLinks =
+        mode === 'deep'
+          ? extractStylesheetLinks(html, current, profile.maxCssFiles)
+          : [];
+      let cssColors = [];
+      let cssFonts = [];
+      if (mode === 'deep' && cssLinks.length) {
+        for (const cssUrl of cssLinks) {
+          try {
+            const css = await fetchText(cssUrl, profile.timeoutMs);
+            cssColors = [...cssColors, ...extractColors(css)];
+            cssFonts = [...cssFonts, ...extractFontFamilies(css)];
+          } catch (e) {
+            // ignore css fetch failures
+          }
+        }
+      }
       pages.push({
         url: current,
         title,
         description,
         textSample: text.slice(0, 1200),
         colors,
+        cssColors: [...new Set(cssColors)].slice(0, 8),
+        cssFonts: [...new Set(cssFonts)].slice(0, 8),
         rawHtml: html.slice(0, 80000)
       });
-      const links = extractInternalLinks(html, current);
+      const links = extractInternalLinks(html, current, profile.maxLinksPerPage);
       for (const link of links) {
-        if (!visited.has(link) && queue.length < 5) queue.push(link);
+        if (!visited.has(link) && queue.length < profile.maxPages * 2) queue.push(link);
       }
     } catch (error) {
       pages.push({
@@ -373,10 +444,12 @@ async function lightweightCrawl(seedUrl) {
       });
     }
   }
-  return pages;
+  return { pages, mode };
 }
 
-function buildTenantConfig(seedUrl, pages) {
+function buildTenantConfig(seedUrl, crawlResult) {
+  const pages = crawlResult.pages || [];
+  const mode = crawlResult.mode || 'light';
   const firstPage = pages[0] || {};
   const origin = new URL(seedUrl);
   const firstHtml = firstPage.rawHtml || '';
@@ -384,7 +457,12 @@ function buildTenantConfig(seedUrl, pages) {
     .split(/[\-|:|•|\|]/)[0]
     .trim();
   const allText = pages.map((p) => p.textSample || '').join(' ');
-  const allColors = [...new Set(pages.flatMap((p) => p.colors || []))];
+  const allColors = [
+    ...new Set(
+      pages.flatMap((p) => [...(p.colors || []), ...(p.cssColors || [])])
+    )
+  ];
+  const allFonts = [...new Set(pages.flatMap((p) => p.cssFonts || []))];
   const terms = extractTopTerms(allText);
   const industry = pickIndustry(terms);
   const themeColor = extractThemeColor(firstHtml);
@@ -417,7 +495,7 @@ function buildTenantConfig(seedUrl, pages) {
     },
     grounding: {
       topTerms: terms,
-      crawlMode: 'light',
+      crawlMode: mode,
       crawlPages: pages.length,
       snippets: pages
         .map((p) => ({
@@ -434,7 +512,8 @@ function buildTenantConfig(seedUrl, pages) {
       heroTitle,
       navItems: navItems.length ? navItems : ['Home', 'Solutions', 'Support', 'About'],
       heroImage,
-      logoUrl
+      logoUrl,
+      fonts: allFonts.slice(0, 4)
     },
     agentforce: {
       orgAlias: 'wint-tmt',
@@ -500,6 +579,7 @@ async function handleReskin(req, res) {
   try {
     const body = await readBody(req);
     const customerUrl = pickCustomerUrl(body);
+    const mode = body.mode === 'deep' ? 'deep' : 'light';
     if (!customerUrl) {
       sendJson(res, 400, {
         error:
@@ -508,8 +588,8 @@ async function handleReskin(req, res) {
       return;
     }
 
-    const pages = await lightweightCrawl(customerUrl);
-    const config = buildTenantConfig(customerUrl, pages);
+    const crawlResult = await crawlSite(customerUrl, mode);
+    const config = buildTenantConfig(customerUrl, crawlResult);
     tenantCache.set(config.tenantId, config);
     sendJson(res, 200, config);
   } catch (error) {

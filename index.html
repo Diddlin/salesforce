@@ -89,10 +89,11 @@
       .control-row {
         display: grid;
         gap: 10px;
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: 1fr 1fr 190px auto;
       }
       input,
-      button {
+      button,
+      select {
         width: 100%;
         padding: 12px;
         border-radius: 10px;
@@ -291,6 +292,10 @@
               type="text"
               placeholder="Optional field path (e.g. nolan_baily.externalKnowledgeUrl)"
             />
+            <select id="modeInput" aria-label="Reskin mode">
+              <option value="light">Light Mode</option>
+              <option value="deep">Deep Visual Mode</option>
+            </select>
             <button id="buildBtn">Build Experience</button>
           </div>
           <p id="status" class="status">Ready.</p>
@@ -381,6 +386,7 @@
       const resultEl = document.getElementById('result');
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
+      const modeInput = document.getElementById('modeInput');
       const chatInput = document.getElementById('chatInput');
       const chatLog = document.getElementById('chatLog');
       const navButtons = document.querySelectorAll('.tab-btn');
@@ -412,6 +418,11 @@
         document.documentElement.style.setProperty('--accent', config.theme.accent);
         document.documentElement.style.setProperty('--surface', config.theme.surface);
         document.documentElement.style.setProperty('--text', config.theme.text);
+        if (config.brand && config.brand.fonts && config.brand.fonts.length) {
+          document.body.style.fontFamily = `${config.brand.fonts[0]}, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+        } else {
+          document.body.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        }
         if (config.brand && config.brand.heroImage) {
           document.documentElement.style.setProperty(
             '--hero-image',
@@ -523,7 +534,7 @@
         buildBtn.disabled = true;
         setStatus('Generating smooth customer-tailored experience...');
         try {
-          const payload = { url };
+          const payload = { url, mode: modeInput.value };
           if (fieldPathInput.value.trim()) payload.fieldPath = fieldPathInput.value.trim();
           const response = await fetch('/api/reskin', {
             method: 'POST',
@@ -533,7 +544,9 @@
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || 'Failed to build experience.');
           renderTenant(data);
-          setStatus('Experience ready. Open Get Support to run the agentic flow.');
+          setStatus(
+            `Experience ready (${data.grounding?.crawlMode || modeInput.value} mode, ${data.grounding?.crawlPages || 0} page crawl). Open Get Support to run the agentic flow.`
+          );
         } catch (error) {
           setStatus(`Error: ${error.message}`);
         } finally {
