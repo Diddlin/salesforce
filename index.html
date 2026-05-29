@@ -3,43 +3,377 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Heroku Test Site</title>
+    <title>Headless SE Demo Studio</title>
     <style>
+      :root {
+        --primary: #0b5cab;
+        --accent: #06b6d4;
+        --surface: #0f172a;
+        --text: #e2e8f0;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #0f172a;
-        color: #e2e8f0;
-        display: grid;
-        place-items: center;
-        min-height: 100vh;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--surface);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .topnav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .topnav button {
+        width: auto;
+        padding: 8px 12px;
+        background: #1e293b;
+        border: 1px solid #334155;
+      }
+      .topnav button.active {
+        background: var(--primary);
       }
       .card {
         background: #111827;
         border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 24px;
-        max-width: 680px;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 18px;
       }
-      h1 {
+      h1, h2, h3 {
         margin-top: 0;
       }
-      code {
+      .brand {
+        color: var(--accent);
+      }
+      input, button, textarea {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        background: #0b1220;
+        color: #e2e8f0;
+      }
+      button {
+        cursor: pointer;
+        background: var(--primary);
+        border: none;
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.7;
+        cursor: progress;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 14px;
+      }
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .kpi {
+        background: #0b1220;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 10px;
+      }
+      .kpi .value {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+      }
+      .package {
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
         background: #1e293b;
-        padding: 2px 6px;
-        border-radius: 6px;
+        margin: 3px;
+        font-size: 12px;
+      }
+      .muted {
+        color: #94a3b8;
+      }
+      .hidden {
+        display: none;
+      }
+      .agent-box {
+        border: 1px dashed var(--accent);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      @media (max-width: 780px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+        .kpi-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
-    <main class="card">
-      <h1>Heroku + GitHub connection works</h1>
-      <p>This test page is deployed from your local git repo.</p>
-      <p>
-        App: <code>david-test</code><br />
-        Repo: <code>Diddlin/salesforce</code>
-      </p>
-      <p>If you can see this page, your deployment pipeline is working.</p>
-    </main>
+    <div class="wrap">
+      <section class="card">
+        <h1>Headless SE Demo Studio</h1>
+        <p class="muted">
+          Framework reference: intake -> lightweight web grounding -> tailored headless experience -> embedded Agentforce support.
+        </p>
+        <div style="display:grid; gap:10px;">
+          <label for="urlInput">Customer Website URL</label>
+          <input id="urlInput" type="text" placeholder="https://customer.com" />
+          <label for="fieldPathInput">Web Agent URL field path (optional)</label>
+          <input id="fieldPathInput" type="text" placeholder="nolan_baily.externalKnowledgeUrl, nolan_baily.externalWebSdrUrl" />
+          <button id="buildBtn">Build Tailored Experience</button>
+          <p id="status" class="muted">Ready.</p>
+        </div>
+      </section>
+
+      <section id="result" class="hidden">
+        <div class="topnav">
+          <button data-section="overview" class="active">Overview</button>
+          <button data-section="packages">Packages</button>
+          <button data-section="support">Get Support</button>
+          <button data-section="build">How It's Built</button>
+        </div>
+
+        <section id="section-overview" class="section active">
+          <div class="hero-grid">
+            <div class="card">
+              <h2><span class="brand" id="companyName">Customer</span> Headless 360</h2>
+              <p id="summary"></p>
+              <p id="challengeSummary" class="muted"></p>
+              <p class="muted">
+                Source website: <a id="websiteLink" target="_blank" rel="noreferrer"></a>
+              </p>
+              <p><strong>Industry:</strong> <span id="industry"></span></p>
+            </div>
+            <div class="card">
+              <h3>Live Demo Signals</h3>
+              <div class="kpi-grid" id="kpis"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Grounding Snapshot</h3>
+            <p class="muted">Top terms extracted from low-cost crawl:</p>
+            <div id="terms"></div>
+            <p class="muted">Pages crawled:</p>
+            <ul id="pages"></ul>
+          </div>
+        </section>
+
+        <section id="section-packages" class="section">
+          <div class="card">
+            <h3>Curated Packages</h3>
+            <p class="muted">A first-stab package set tailored to the customer site context.</p>
+            <div id="packages"></div>
+          </div>
+        </section>
+
+        <section id="section-support" class="section">
+          <div class="grid">
+            <div class="card">
+              <h3>Get Support (Agentforce)</h3>
+              <div class="agent-box">
+                <p><strong>Org:</strong> WINT TMT</p>
+                <p id="agentNote" class="muted"></p>
+                <p><strong>Starter prompts:</strong></p>
+                <ul id="starterPrompts"></ul>
+                <button id="launchAgentBtn" type="button">Launch Embedded Support Agent</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Grounding snippets</h3>
+              <div id="snippets"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="section-build" class="section">
+          <div class="card">
+            <h3>How This Demo Was Built</h3>
+            <ul>
+              <li>URL intake from direct input or Web Agent context field.</li>
+              <li>Light crawl of up to three pages to keep speed and token cost low.</li>
+              <li>Heuristic extraction for terms, theme hints, and summary.</li>
+              <li>Runtime reskin using CSS variables and JSON config.</li>
+              <li>Agentforce embedding contract ready for WINT TMT support flow.</li>
+            </ul>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <script>
+      const buildBtn = document.getElementById('buildBtn');
+      const launchAgentBtn = document.getElementById('launchAgentBtn');
+      const statusEl = document.getElementById('status');
+      const resultEl = document.getElementById('result');
+      const urlInput = document.getElementById('urlInput');
+      const fieldPathInput = document.getElementById('fieldPathInput');
+      const navButtons = document.querySelectorAll('.topnav button');
+
+      function setStatus(message) {
+        statusEl.textContent = message;
+      }
+
+      function renderTenant(config) {
+        document.documentElement.style.setProperty('--primary', config.theme.primary);
+        document.documentElement.style.setProperty('--accent', config.theme.accent);
+        document.documentElement.style.setProperty('--surface', config.theme.surface);
+        document.documentElement.style.setProperty('--text', config.theme.text);
+
+        document.getElementById('companyName').textContent = config.companyName;
+        document.getElementById('summary').textContent = config.summary;
+        document.getElementById('challengeSummary').textContent = config.challengeSummary || '';
+        document.getElementById('industry').textContent = config.industry || 'General Business';
+
+        const websiteLink = document.getElementById('websiteLink');
+        websiteLink.href = config.website;
+        websiteLink.textContent = config.website;
+
+        const terms = document.getElementById('terms');
+        terms.innerHTML = '';
+        (config.grounding.topTerms || []).forEach((term) => {
+          const span = document.createElement('span');
+          span.className = 'pill';
+          span.textContent = term;
+          terms.appendChild(span);
+        });
+
+        const pages = document.getElementById('pages');
+        pages.innerHTML = '';
+        (config.sourcePages || []).forEach((page) => {
+          const li = document.createElement('li');
+          li.textContent = page;
+          pages.appendChild(li);
+        });
+
+        document.getElementById('agentNote').textContent = config.agentforce.notes;
+        const promptsList = document.getElementById('starterPrompts');
+        promptsList.innerHTML = '';
+        (config.agentforce.starterPrompts || []).forEach((prompt) => {
+          const li = document.createElement('li');
+          li.textContent = prompt;
+          promptsList.appendChild(li);
+        });
+
+        const snippetsEl = document.getElementById('snippets');
+        snippetsEl.innerHTML = '';
+        (config.grounding.snippets || []).forEach((snippet) => {
+          const div = document.createElement('div');
+          div.className = 'package';
+          div.innerHTML = `
+            <p><strong>${snippet.title || 'Untitled Page'}</strong></p>
+            <p class="muted">${snippet.description || 'No description found.'}</p>
+            <p class="muted">${snippet.url}</p>
+          `;
+          snippetsEl.appendChild(div);
+        });
+
+        const packagesEl = document.getElementById('packages');
+        packagesEl.innerHTML = '';
+        (config.packages || []).forEach((pkg) => {
+          const div = document.createElement('div');
+          div.className = 'package';
+          div.innerHTML = `
+            <h4>${pkg.name}</h4>
+            <p>${pkg.focus}</p>
+            <div>${(pkg.highlights || []).map((h) => `<span class="pill">${h}</span>`).join('')}</div>
+          `;
+          packagesEl.appendChild(div);
+        });
+
+        const kpisEl = document.getElementById('kpis');
+        kpisEl.innerHTML = '';
+        (config.kpis || []).forEach((kpi) => {
+          const div = document.createElement('div');
+          div.className = 'kpi';
+          div.innerHTML = `
+            <div class="muted">${kpi.label}</div>
+            <div class="value">${kpi.value}</div>
+            <div class="muted">${kpi.trend}</div>
+          `;
+          kpisEl.appendChild(div);
+        });
+        resultEl.classList.remove('hidden');
+      }
+
+      async function buildExperience() {
+        const url = urlInput.value.trim();
+        if (!url) {
+          setStatus('Enter a customer website URL first.');
+          return;
+        }
+        buildBtn.disabled = true;
+        setStatus('Crawling site and generating lightweight customer config...');
+        try {
+          const payload = { url };
+          if (fieldPathInput.value.trim()) payload.fieldPath = fieldPathInput.value.trim();
+          const response = await fetch('/api/reskin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Failed to build experience');
+          renderTenant(data);
+          setStatus('Customer-tailored demo generated.');
+        } catch (error) {
+          setStatus(`Error: ${error.message}`);
+        } finally {
+          buildBtn.disabled = false;
+        }
+      }
+
+      buildBtn.addEventListener('click', buildExperience);
+      urlInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') buildExperience();
+      });
+
+      navButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          navButtons.forEach((b) => b.classList.remove('active'));
+          button.classList.add('active');
+          const section = button.dataset.section;
+          document.querySelectorAll('.section').forEach((panel) => {
+            panel.classList.remove('active');
+          });
+          document.getElementById(`section-${section}`).classList.add('active');
+        });
+      });
+
+      launchAgentBtn.addEventListener('click', () => {
+        setStatus('Placeholder: embed WINT TMT Agentforce web support experience here.');
+      });
+    </script>
   </body>
 </html>
