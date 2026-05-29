@@ -359,6 +359,7 @@
             <article class="card glass">
               <h3>WINT TMT Support Agent</h3>
               <p id="agentNote" class="muted"></p>
+              <p id="embedStatus" class="muted"></p>
               <div id="agentforceEmbed" class="chat-shell hidden">
                 <div class="chat-header">Embedded Agentforce Concierge</div>
                 <iframe
@@ -412,6 +413,7 @@
       const agentforceEmbed = document.getElementById('agentforceEmbed');
       const agentforceFrame = document.getElementById('agentforceFrame');
       const chatHeader = document.getElementById('chatHeader');
+      const embedStatus = document.getElementById('embedStatus');
       const urlInput = document.getElementById('urlInput');
       const fieldPathInput = document.getElementById('fieldPathInput');
       const modeInput = document.getElementById('modeInput');
@@ -431,6 +433,50 @@
         node.textContent = text;
         chatLog.appendChild(node);
         chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      function initEmbeddedMessaging(config) {
+        const msgCfg = config && config.agentforce && config.agentforce.embeddedMessaging;
+        if (!msgCfg || !msgCfg.bootstrapUrl) {
+          embedStatus.textContent = 'Embedded Messaging not configured.';
+          return;
+        }
+        if (window.__embeddedMessagingLoaded) {
+          embedStatus.textContent = 'Embedded Messaging initialized.';
+          return;
+        }
+
+        embedStatus.textContent = 'Loading Embedded Messaging...';
+        window.initEmbeddedMessaging = function initEmbeddedMessaging() {
+          try {
+            embeddedservice_bootstrap.settings.language = 'en_US';
+            embeddedservice_bootstrap.init(
+              msgCfg.orgId,
+              msgCfg.deploymentName,
+              msgCfg.siteUrl,
+              {
+                scrt2URL: msgCfg.scrt2Url
+              }
+            );
+            window.__embeddedMessagingLoaded = true;
+            embedStatus.textContent = 'Embedded Messaging initialized.';
+          } catch (err) {
+            embedStatus.textContent = `Embedded Messaging error: ${err.message || 'init failed'}`;
+          }
+        };
+
+        const script = document.createElement('script');
+        script.src = msgCfg.bootstrapUrl;
+        script.async = true;
+        script.onload = () => {
+          if (typeof window.initEmbeddedMessaging === 'function') {
+            window.initEmbeddedMessaging();
+          }
+        };
+        script.onerror = () => {
+          embedStatus.textContent = 'Failed to load Embedded Messaging script.';
+        };
+        document.body.appendChild(script);
       }
 
       function renderTenant(config) {
@@ -469,11 +515,15 @@
           agentforceFrame.src = config.agentforce.embedUrl;
           agentforceEmbed.classList.remove('hidden');
           chatHeader.textContent = 'Support Copilot (Grounded Fallback Chat)';
+          embedStatus.textContent = 'Using iframe embed.';
         } else {
           agentforceEmbed.classList.add('hidden');
           agentforceFrame.removeAttribute('src');
           chatHeader.textContent = 'Agentic Support Experience';
+          embedStatus.textContent = '';
         }
+
+        initEmbeddedMessaging(config);
         document.getElementById('heroTitle').textContent =
           (config.brand && config.brand.heroTitle) || `${config.companyName} Headless 360`;
 

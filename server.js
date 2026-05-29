@@ -10,6 +10,19 @@ const DEFAULT_FIELD_PATH =
   'nolan_baily.customerWebsite';
 const AGENT_SUPPORT_ENDPOINT = process.env.AGENT_SUPPORT_ENDPOINT || '';
 const AGENTFORCE_EMBED_URL = process.env.AGENTFORCE_EMBED_URL || '';
+const EMBEDDED_MESSAGING_ORG_ID =
+  process.env.EMBEDDED_MESSAGING_ORG_ID || '00DKj00000ibSAG';
+const EMBEDDED_MESSAGING_DEPLOYMENT =
+  process.env.EMBEDDED_MESSAGING_DEPLOYMENT || 'Tech_IDO_Web_SDR_Deployment';
+const EMBEDDED_MESSAGING_SITE_URL =
+  process.env.EMBEDDED_MESSAGING_SITE_URL ||
+  'https://storm-971f7eb7643997.my.site.com/ESWTechIDOWebSDRDeplo1762196766193';
+const EMBEDDED_MESSAGING_SCRT2_URL =
+  process.env.EMBEDDED_MESSAGING_SCRT2_URL ||
+  'https://storm-971f7eb7643997.my.salesforce-scrt.com';
+const EMBEDDED_MESSAGING_BOOTSTRAP_URL =
+  process.env.EMBEDDED_MESSAGING_BOOTSTRAP_URL ||
+  'https://storm-971f7eb7643997.my.site.com/ESWTechIDOWebSDRDeplo1762196766193/assets/js/bootstrap.min.js';
 const CRAWL_PROFILES = {
   light: { maxPages: 3, maxLinksPerPage: 3, maxCssFiles: 0, timeoutMs: 7000 },
   deep: { maxPages: 8, maxLinksPerPage: 8, maxCssFiles: 6, timeoutMs: 9000 }
@@ -520,6 +533,13 @@ function buildTenantConfig(seedUrl, crawlResult) {
       orgAlias: 'wint-tmt',
       mode: 'embedded-support',
       embedUrl: AGENTFORCE_EMBED_URL,
+      embeddedMessaging: {
+        orgId: EMBEDDED_MESSAGING_ORG_ID,
+        deploymentName: EMBEDDED_MESSAGING_DEPLOYMENT,
+        siteUrl: EMBEDDED_MESSAGING_SITE_URL,
+        scrt2Url: EMBEDDED_MESSAGING_SCRT2_URL,
+        bootstrapUrl: EMBEDDED_MESSAGING_BOOTSTRAP_URL
+      },
       starterPrompts: [
         `Summarize ${companyName || 'this customer'} priorities from grounding context.`,
         `How can I position Agentforce support for ${industry} use cases?`,
@@ -706,5 +726,8 @@ server.listen(port, () => {
   );
   console.log(
     `Agentforce embed mode: ${AGENTFORCE_EMBED_URL ? 'iframe' : 'not-configured'}`
+  );
+  console.log(
+    `Embedded messaging mode: ${EMBEDDED_MESSAGING_BOOTSTRAP_URL ? 'script-enabled' : 'not-configured'}`
   );
 });
