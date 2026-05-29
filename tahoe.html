@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tahoe-Style Headless 360</title>
+    <style>
+      :root{--text:#eaf1ff;--muted:#9db5d7;--line:rgba(148,163,184,.28);--pri:#38bdf8;--acc:#22d3ee}
+      *{box-sizing:border-box} body{margin:0;color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 10% 8%,rgba(59,130,246,.35),transparent 34%),radial-gradient(circle at 87% 12%,rgba(34,211,238,.18),transparent 34%),linear-gradient(180deg,#040913 0%,#071327 100%)}
+      .wrap{max-width:1180px;margin:0 auto;padding:22px}.shell{border:1px solid var(--line);border-radius:16px;background:rgba(8,18,36,.78);padding:18px}
+      h1{margin:0 0 6px;font-size:clamp(28px,4.5vw,44px)} .sub{color:var(--muted);margin:0}
+      .nav,.opts{display:flex;gap:8px;flex-wrap:wrap}.nav{margin:12px 0}
+      .tab,.chip{border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:rgba(15,23,42,.75);color:var(--text);cursor:pointer}
+      .tab.active{background:linear-gradient(135deg,#0369a1,#06b6d4);border-color:transparent}
+      .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+      .metric,.card{border:1px solid var(--line);border-radius:12px;background:rgba(10,20,38,.85);padding:12px}
+      .metric .v{font-weight:800;font-size:23px}
+      .row{display:grid;grid-template-columns:1fr 240px;gap:10px;margin-top:10px}
+      .grid{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:14px}
+      .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .section{display:none;margin-top:14px}.section.active{display:block}
+      input,textarea,button{width:100%;border-radius:10px;border:1px solid var(--line);background:#071124;color:var(--text);padding:10px 11px}
+      button{border:none;background:linear-gradient(135deg,var(--pri),var(--acc));color:#04111f;font-weight:700;cursor:pointer}
+      button.secondary{background:rgba(15,23,42,.9);color:var(--text);border:1px solid var(--line)}
+      .packages,.stack{display:grid;gap:10px}.ok{display:none;border:1px solid rgba(16,185,129,.4);color:#bbf7d0;background:rgba(6,78,59,.24);border-radius:10px;padding:10px}
+      .portal{display:none;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.portal.open{display:grid}
+      .table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left}
+      .chat{border:1px solid var(--line);border-radius:12px;overflow:hidden}.chat-head{background:rgba(3,105,161,.22);border-bottom:1px solid var(--line);padding:10px}
+      .chat-log{height:300px;overflow:auto;padding:12px;display:grid;gap:8px;background:rgba(5,12,26,.78)}
+      .msg{max-width:82%;padding:9px 10px;border-radius:10px;line-height:1.35}.msg.user{justify-self:end;background:rgba(6,182,212,.24);border:1px solid rgba(34,211,238,.38)}.msg.bot{justify-self:start;background:rgba(15,23,42,.94);border:1px solid var(--line)}
+      .chat-in{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px;border-top:1px solid var(--line)}
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#bae6fd}
+      @media (max-width:920px){.metrics,.row,.grid,.form,.portal{grid-template-columns:1fr}}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="shell">
+        <h1><span id="heroCompany">Tahoe Paddle Co.</span> - Headless 360</h1>
+        <p id="heroSub" class="sub">Lake Tahoe, California</p>
+        <div class="nav">
+          <button class="tab active" data-tab="trip">Book a Trip</button>
+          <button class="tab" data-tab="portal">Guide Portal</button>
+          <button class="tab" data-tab="support">Get Support</button>
+          <button class="tab" data-tab="built">How It's Built</button>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="v">72 mi</div><div class="sub">shoreline</div></div>
+          <div class="metric"><div class="v">70 ft</div><div class="sub">clarity</div></div>
+          <div class="metric"><div class="v">6,225'</div><div class="sub">elevation</div></div>
+          <div class="metric"><div class="v" id="crawlPages">0</div><div class="sub">pages crawled</div></div>
+        </div>
+        <div class="row">
+          <input id="website" type="text" placeholder="Customer website URL (https://customer.com)" />
+          <button id="initBtn">Initialize Experience</button>
+        </div>
+        <p id="initStatus" class="sub" style="margin-top:8px;">Deep crawl initializes the full demo context.</p>
+      </section>
+
+      <section id="trip" class="section active">
+        <div class="grid">
+          <article class="card">
+            <h3>Build Your Kayak Package</h3>
+            <div class="form">
+              <input placeholder="Full Name" /><input placeholder="Email" />
+              <input type="date" /><input type="number" min="1" placeholder="Group Size" />
+            </div>
+            <p class="sub" style="margin-top:10px;">Experience</p>
+            <div class="opts"><span class="chip">Beginner</span><span class="chip">Intermediate</span><span class="chip">Advanced</span></div>
+            <p class="sub" style="margin-top:10px;">What sounds fun?</p>
+            <div class="opts"><span class="chip">Sunset Tours</span><span class="chip">Fishing</span><span class="chip">Photography</span><span class="chip">Wildlife</span></div>
+            <textarea id="notes" rows="3" style="margin-top:10px;" placeholder="Anything else?"></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+              <button id="buildPackages">Build My Packages</button>
+              <button id="resetPackages" class="secondary">Change Preferences</button>
+            </div>
+            <p id="tripStatus" class="sub" style="margin-top:8px;">Ready to craft your experience.</p>
+          </article>
+          <article class="card">
+            <h3>Curated Packages</h3>
+            <p class="sub">Choose the experience that speaks to you</p>
+            <div id="packages" class="packages"></div>
+            <div id="booked" class="ok">You're all set. Your adventure package is queued.</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="portal" class="section">
+        <article class="card">
+          <h3>Guide Portal</h3>
+          <p class="sub">Enter password to access upcoming and historical bookings.</p>
+          <div class="row"><input id="portalPass" type="password" placeholder="Guide password" /><button id="portalLogin">Sign In</button></div>
+          <p id="portalStatus" class="sub" style="margin-top:8px;">Locked.</p>
+          <div id="portalGrid" class="portal">
+            <div class="card">
+              <h4>Upcoming Bookings</h4>
+              <table class="table"><thead><tr><th>Customer</th><th>Date</th><th>Guide</th><th>Status</th></tr></thead><tbody id="upRows"></tbody></table>
+            </div>
+            <div class="card">
+              <h4>Past Bookings (Data Cloud)</h4>
+              <table class="table"><thead><tr><th>Month</th><th>Trips</th><th>Avg Rating</th></tr></thead><tbody id="pastRows"></tbody></table>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="support" class="section">
+        <div class="grid">
+          <article class="card">
+            <h3>Your Tahoe Concierge</h3>
+            <p class="sub">Custom support chat grounded on customer crawl context.</p>
+            <div class="opts" style="margin:8px 0 10px;"><span class="chip q">Weather forecast</span><span class="chip q">Modify a booking</span><span class="chip q">What to bring</span></div>
+            <div class="chat">
+              <div id="chatHead" class="chat-head">Tahoe AI Concierge - Powered by Agentforce</div>
+              <div id="chatLog" class="chat-log"></div>
+              <div class="chat-in"><input id="chatInput" placeholder="Ask your concierge..." /><button id="sendBtn">Send</button></div>
+            </div>
+            <p id="supportStatus" class="sub" style="margin-top:8px;">Connecting...</p>
+          </article>
+          <article class="card"><h3>Grounded Context</h3><div id="snippets" class="stack"></div></article>
+        </div>
+      </section>
+
+      <section id="built" class="section">
+        <article class="card">
+          <h3>Headless Salesforce, Built with AI</h3>
+          <p class="sub">No Visualforce. No Lightning pages. Custom UI + Salesforce APIs.</p>
+          <div class="grid">
+            <div class="stack">
+              <div class="card"><strong>Frontend</strong><div>Vanilla HTML / CSS / JS</div></div>
+              <div class="card"><strong>Backend</strong><div>Node.js + Express (Heroku)</div></div>
+              <div class="card"><strong>Messaging</strong><div>MIAW-style custom chat pattern</div></div>
+            </div>
+            <div class="stack">
+              <div class="card"><strong>Data</strong><div>REST + SOQL + Data Cloud query patterns</div></div>
+              <div class="card"><strong>AI</strong><div>Prompt Templates + Agentforce actions</div></div>
+              <div class="card"><strong>Status</strong><div id="orgStatus">Checking org connection...</div></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <script>
+      const tabs = document.querySelectorAll('.tab');
+      const sections = { trip: document.getElementById('trip'), portal: document.getElementById('portal'), support: document.getElementById('support'), built: document.getElementById('built') };
+      const website = document.getElementById('website');
+      const initBtn = document.getElementById('initBtn');
+      const initStatus = document.getElementById('initStatus');
+      const heroCompany = document.getElementById('heroCompany');
+      const heroSub = document.getElementById('heroSub');
+      const crawlPages = document.getElementById('crawlPages');
+      const packagesEl = document.getElementById('packages');
+      const buildPackages = document.getElementById('buildPackages');
+      const resetPackages = document.getElementById('resetPackages');
+      const booked = document.getElementById('booked');
+      const tripStatus = document.getElementById('tripStatus');
+      const portalPass = document.getElementById('portalPass');
+      const portalLogin = document.getElementById('portalLogin');
+      const portalStatus = document.getElementById('portalStatus');
+      const portalGrid = document.getElementById('portalGrid');
+      const upRows = document.getElementById('upRows');
+      const pastRows = document.getElementById('pastRows');
+      const chatHead = document.getElementById('chatHead');
+      const chatLog = document.getElementById('chatLog');
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const supportStatus = document.getElementById('supportStatus');
+      const snippets = document.getElementById('snippets');
+      const orgStatus = document.getElementById('orgStatus');
+      let tenant = null;
+      let chatHistory = [];
+
+      function switchTab(tab) {
+        tabs.forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+        Object.entries(sections).forEach(([k, el]) => el.classList.toggle('active', k === tab));
+      }
+      tabs.forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+      function addMsg(role, text) {
+        const d = document.createElement('div');
+        d.className = `msg ${role}`;
+        d.textContent = text;
+        chatLog.appendChild(d);
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+      function renderPackages(list) {
+        packagesEl.innerHTML = '';
+        (list || []).forEach((p) => {
+          const d = document.createElement('div');
+          d.className = 'package';
+          d.innerHTML = `<h4>${p.name}</h4><p>${p.focus || ''}</p><p class="sub">${(p.highlights || []).join(' · ')}</p>`;
+          packagesEl.appendChild(d);
+        });
+      }
+      function renderSnippets(list) {
+        snippets.innerHTML = '';
+        (list || []).forEach((s) => {
+          const d = document.createElement('div');
+          d.className = 'card';
+          d.innerHTML = `<strong>${s.title || 'Untitled'}</strong><div>${s.description || ''}</div><div class="mono">${s.url || ''}</div>`;
+          snippets.appendChild(d);
+        });
+      }
+      async function initTenant() {
+        const url = website.value.trim();
+        if (!url) { initStatus.textContent = 'Enter a customer URL first.'; return; }
+        initBtn.disabled = true;
+        initStatus.textContent = 'Deep crawling customer site and initializing experience...';
+        try {
+          const response = await fetch('/api/reskin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, mode: 'deep', archetype: 'auto' }) });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Initialization failed.');
+          tenant = data;
+          heroCompany.textContent = data.companyName || 'Customer';
+          heroSub.textContent = data.website || 'Customer experience';
+          crawlPages.textContent = String(data.grounding?.crawlPages || 0);
+          renderPackages(data.packages || []);
+          renderSnippets(data.grounding?.snippets || []);
+          initStatus.textContent = `Initialized ${data.companyName} (${data.grounding?.crawlPages || 0} pages crawled).`;
+          chatHead.textContent = `${data.companyName} Concierge - Powered by Agentforce`;
+          supportStatus.textContent = data.agentforce?.notes || 'Concierge ready.';
+          chatLog.innerHTML = '';
+          chatHistory = [];
+          addMsg('bot', `Welcome to ${data.companyName}. Ask for bookings, support, or next-best actions.`);
+          switchTab('trip');
+        } catch (e) {
+          initStatus.textContent = `Error: ${e.message}`;
+        } finally {
+          initBtn.disabled = false;
+        }
+      }
+      async function sendSupport() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+        chatInput.value = '';
+        addMsg('user', message);
+        sendBtn.disabled = true;
+        try {
+          if (!tenant) { addMsg('bot', 'Initialize a customer site first so support can use grounded context.'); return; }
+          const response = await fetch('/api/support', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tenantId: tenant.tenantId, message, history: chatHistory.slice(-8) }) });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Support call failed.');
+          addMsg('bot', data.reply || 'No response.');
+          chatHistory.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply || '' });
+          supportStatus.textContent = data.mode === 'upstream-agent' ? 'Live upstream support endpoint connected.' : 'Grounded local fallback active.';
+        } catch (e) {
+          addMsg('bot', `Issue: ${e.message}`);
+        } finally {
+          sendBtn.disabled = false;
+        }
+      }
+
+      buildPackages.addEventListener('click', () => {
+        if (!tenant) { tripStatus.textContent = 'Initialize customer experience first.'; return; }
+        tripStatus.textContent = `Crafted package options for ${tenant.companyName}.`;
+        booked.style.display = 'block';
+      });
+      resetPackages.addEventListener('click', () => { booked.style.display = 'none'; tripStatus.textContent = 'Preferences reset. Update details and rebuild packages.'; });
+      initBtn.addEventListener('click', initTenant);
+      website.addEventListener('keydown', (e) => { if (e.key === 'Enter') initTenant(); });
+      sendBtn.addEventListener('click', sendSupport);
+      chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendSupport(); });
+      document.querySelectorAll('.q').forEach((chip) => chip.addEventListener('click', () => { chatInput.value = chip.textContent; sendSupport(); }));
+      portalLogin.addEventListener('click', () => {
+        if ((portalPass.value || '').trim() === 'guide') {
+          portalStatus.textContent = 'Signed in. Loading bookings...';
+          portalGrid.classList.add('open');
+          upRows.innerHTML = '';
+          [['Morgan Lee','2026-06-02','A. Rivera','Confirmed'],['J. Howard','2026-06-05','D. Patel','Pending'],['K. Rhodes','2026-06-08','A. Rivera','Confirmed']].forEach((r)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`;upRows.appendChild(tr);});
+          pastRows.innerHTML = '';
+          [['Jan','84','4.7'],['Feb','92','4.8'],['Mar','103','4.8'],['Apr','97','4.9']].forEach((r)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td>`;pastRows.appendChild(tr);});
+          return;
+        }
+        portalStatus.textContent = 'Incorrect password. Try "guide".';
+      });
+      fetch('/health').then((r) => r.json()).then((d) => { orgStatus.textContent = d && d.ok ? `Connected (tenant cache: ${d.tenantCount})` : 'Health check degraded'; }).catch(() => { orgStatus.textContent = 'Health check unavailable'; });
+    </script>
+  </body>
+</html>

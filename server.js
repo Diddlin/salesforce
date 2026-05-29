@@ -4,7 +4,7 @@ const path = require('path');
 const { URL } = require('url');
 
 const port = Number(process.env.PORT) || 3000;
-const indexPath = path.join(__dirname, 'index.html');
+const indexPath = path.join(__dirname, 'tahoe.html');
 const DEFAULT_FIELD_PATH =
   process.env.WEB_AGENT_CUSTOMER_WEBSITE_FIELD ||
   'nolan_baily.customerWebsite';
@@ -617,12 +617,12 @@ function buildTenantConfig(seedUrl, crawlResult) {
         bootstrapUrl: EMBEDDED_MESSAGING_BOOTSTRAP_URL
       },
       starterPrompts: [
-        `Summarize ${companyName || 'this customer'} priorities from grounding context.`,
-        `How can I position Agentforce support for ${industry} use cases?`,
-        'What are the top next-best actions for a solution engineer demo?'
+        `Act as a concierge and summarize ${companyName || 'this customer'} priorities from grounding context.`,
+        `What concierge-style support journey should I run for ${industry} use cases?`,
+        'What are the top next-best actions for a support-first demo?'
       ],
       notes:
-        'Use these crawl snippets as low-cost grounding context before invoking the WINT TMT support agent.'
+        'Use these crawl snippets as grounding context for a concierge-style Agentforce support interaction.'
     },
     logoUrl
   };
@@ -665,15 +665,15 @@ function localSupportReply(config, message) {
   const packs = config.packages || [];
 
   if (lower.includes('next step') || lower.includes('what should')) {
-    return `For ${config.companyName}, start with "${packs[0]?.name || 'Fast Start'}" and lead with ${terms.slice(0, 2).join(', ') || 'customer priorities'}. Then transition to support deflection with Agentforce using grounded snippets from the customer site.`;
+    return `Concierge recommendation for ${config.companyName}: start with "${packs[0]?.name || 'Fast Start'}", center the conversation on ${terms.slice(0, 2).join(', ') || 'customer priorities'}, and then transition into Agentforce-led support deflection using grounded snippets from their website.`;
   }
   if (lower.includes('agent') || lower.includes('support')) {
-    return `Use WINT TMT Agentforce as the support layer: pre-seed context with ${terms.slice(0, 3).join(', ') || 'top customer themes'}, then handle Q&A and case guidance in chat.`;
+    return `Use the WINT TMT concierge flow: pre-seed context with ${terms.slice(0, 3).join(', ') || 'top customer themes'}, then handle Q&A, guidance, and case triage in embedded chat.`;
   }
   if (lower.includes('package') || lower.includes('pricing')) {
-    return `Recommended package path: 1) ${packs[0]?.name || 'Fast Start'}, 2) ${packs[1]?.name || 'Support Assist'}, 3) ${packs[2]?.name || 'Expansion'}. This shows quick value, operational support, and scale.`;
+    return `Concierge package path: 1) ${packs[0]?.name || 'Fast Start'}, 2) ${packs[1]?.name || 'Support Assist'}, 3) ${packs[2]?.name || 'Expansion'}. This shows quick value, support maturity, and scalable expansion.`;
   }
-  return `Based on ${config.companyName}'s site signals (${terms.slice(0, 4).join(', ') || 'general business context'}), position a headless experience with fast branding, grounded support, and a clear rollout path tied to measurable KPIs.`;
+  return `Based on ${config.companyName}'s site signals (${terms.slice(0, 4).join(', ') || 'general business context'}), I recommend a concierge-led experience with fast branding, grounded support, and a clear KPI-driven rollout path.`;
 }
 
 function extractSupportText(payload) {
@@ -815,7 +815,7 @@ const server = http.createServer((req, res) => {
   fs.readFile(indexPath, 'utf8', (err, html) => {
     if (err) {
       res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Could not load index.html');
+      res.end('Could not load tahoe.html');
       return;
     }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
