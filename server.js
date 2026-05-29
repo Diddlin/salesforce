@@ -569,7 +569,7 @@ function buildTenantConfig(seedUrl, crawlResult) {
     companyName: companyName || 'Customer',
     website: seedUrl,
     sourcePages: pages.map((p) => p.url),
-    summary: `Tailored demo for ${companyName || origin.hostname} based on lightweight crawl of ${pages.length} page(s).`,
+    summary: `Tailored demo for ${companyName || origin.hostname} based on deep crawl of ${pages.length} page(s).`,
     industry,
     challengeSummary,
     theme: {
@@ -694,7 +694,7 @@ async function handleReskin(req, res) {
   try {
     const body = await readBody(req);
     const customerUrl = pickCustomerUrl(body);
-    const mode = body.mode === 'deep' ? 'deep' : 'light';
+    const mode = 'deep';
     const archetype = String(body.archetype || 'auto');
     if (!customerUrl) {
       sendJson(res, 400, {
