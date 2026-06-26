@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>RC Deal Desk Agent Access</label>
+    <description>Grants all object, field, Apex, and flow access required to run the RC Deal Desk Agent. Assign to users (e.g. System Administrators) who will use the agent.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+
+    <!-- Custom object: Deal Desk Recommendations -->
+    <objectPermissions>
+        <object>RC_DealDesk_Recommendation__c</object>
+        <allowCreate>true</allowCreate>
+        <allowRead>true</allowRead>
+        <allowEdit>true</allowEdit>
+        <allowDelete>true</allowDelete>
+        <viewAllRecords>true</viewAllRecords>
+        <modifyAllRecords>true</modifyAllRecords>
+    </objectPermissions>
+
+    <!-- Deal Desk Recommendation fields -->
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_Applied__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_Category__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_CurrentDiscount__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_ProductName__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_QuoteLineItemId__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_Quote__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_RecommendedDiscount__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>RC_DealDesk_Recommendation__c.RC_Source__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+
+    <!-- Quote custom fields -->
+    <fieldPermissions>
+        <field>Quote.RC_Quote_DealDeskFullJson__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Quote.RC_ARRComments__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Quote.RC_MRRComments__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Quote.RC_CommissionComments__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Quote.RC_OneTimeChargeComments__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+
+    <!-- QuoteLineItem custom fields (RC_ProductName__c and RLM_ProductName__c are formula = read only) -->
+    <fieldPermissions>
+        <field>QuoteLineItem.RC_PriceTermUnit__c</field>
+        <readable>true</readable>
+        <editable>true</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>QuoteLineItem.RC_ProductName__c</field>
+        <readable>true</readable>
+        <editable>false</editable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>QuoteLineItem.RLM_ProductName__c</field>
+        <readable>true</readable>
+        <editable>false</editable>
+    </fieldPermissions>
+
+    <!-- Apex invocable actions -->
+    <classAccesses>
+        <apexClass>GetOpenQuotesForAccount</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RC_DealDeskDiscountApplier</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RC_DealDeskDiscountExtractor</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>RC_DealDeskJsonTrimmer</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+
+    <!-- Agent action flows -->
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>Get_Open_Quotes_For_Account</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>RC_DealDesk_Score_Quote_5</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>true</enabled>
+        <flow>RC_DealDesk_Apply_Discounts_Flow</flow>
+    </flowAccesses>
+</PermissionSet>

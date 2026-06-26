@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- ============ RC Deal Desk Agent - migration package ============ -->
+
+    <!-- Agent (Bot + planner with embedded topics/actions) -->
+    <types>
+        <members>RC_Deal_Desk_Agent_New</members>
+        <name>Bot</name>
+    </types>
+    <types>
+        <members>RC_Deal_Desk_Agent_New</members>
+        <name>GenAiPlannerBundle</name>
+    </types>
+
+    <!-- Prompt template used by the scoring action -->
+    <types>
+        <members>RC_DealDesk_Agent_v2</members>
+        <name>GenAiPromptTemplate</name>
+    </types>
+
+    <!-- Flows wired to the agent actions -->
+    <types>
+        <members>Get_Open_Quotes_For_Account</members>
+        <members>RC_DealDesk_Score_Quote_5</members>
+        <members>RC_DealDesk_Apply_Discounts_Flow</members>
+        <name>Flow</name>
+    </types>
+
+    <!-- Apex invocable actions called by the flows (+ test classes & factory) -->
+    <types>
+        <members>GetOpenQuotesForAccount</members>
+        <members>RC_DealDeskDiscountApplier</members>
+        <members>RC_DealDeskDiscountExtractor</members>
+        <members>RC_DealDeskJsonTrimmer</members>
+        <members>GetOpenQuotesForAccountTest</members>
+        <members>RC_DealDeskDiscountApplierTest</members>
+        <members>RC_DealDeskDiscountExtractorTest</members>
+        <members>RC_DealDeskJsonTrimmerTest</members>
+        <members>RC_DealDeskTestDataFactory</members>
+        <name>ApexClass</name>
+    </types>
+
+    <!-- Permission Set granting all access needed to run the agent -->
+    <types>
+        <members>RC_Deal_Desk_Agent_Access</members>
+        <name>PermissionSet</name>
+    </types>
+
+    <!-- Custom object that stores the Deal Desk recommendations (incl. all its fields) -->
+    <types>
+        <members>RC_DealDesk_Recommendation__c</members>
+        <name>CustomObject</name>
+    </types>
+
+    <!-- Custom fields on standard objects referenced by the agent components -->
+    <types>
+        <members>Quote.RC_Quote_DealDeskFullJson__c</members>
+        <members>Quote.RC_ARRComments__c</members>
+        <members>Quote.RC_MRRComments__c</members>
+        <members>Quote.RC_CommissionComments__c</members>
+        <members>Quote.RC_OneTimeChargeComments__c</members>
+        <members>QuoteLineItem.RC_PriceTermUnit__c</members>
+        <members>QuoteLineItem.RC_ProductName__c</members>
+        <members>QuoteLineItem.RLM_ProductName__c</members>
+        <name>CustomField</name>
+    </types>
+
+    <version>65.0</version>
+</Package>

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPlannerBundle xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <description>Automate common business tasks and assist users in their flow of work. Agentforce Employee Agent can search knowledge articles and other data sources. Customize it further to meet your employees’ business needs.</description>
+    <localActionLinks>
+        <genAiFunctionName>AnswerQuestionsWithKnowledge_16jHu0000008Z67</genAiFunctionName>
+    </localActionLinks>
+    <localTopicLinks>
+        <genAiPluginName>Quote_Search_16jHu0000008Z67</genAiPluginName>
+    </localTopicLinks>
+    <localTopicLinks>
+        <genAiPluginName>RC_Score_My_Quote_16jHu0000008Z67</genAiPluginName>
+    </localTopicLinks>
+    <localTopics>
+        <fullName>Quote_Search_16jHu0000008Z67</fullName>
+        <aiPluginUtterances>
+            <developerName>utterance_0_1779303975007</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>utterance_0_1779303975007</masterLabel>
+            <utterance>Find open quotes to this account</utterance>
+        </aiPluginUtterances>
+        <canEscalate>false</canEscalate>
+        <description>Handles inquiries related to searching for quotes associated with an account via Opportunities and Contracts.</description>
+        <developerName>Quote_Search_16jHu0000008Z67</developerName>
+        <genAiPluginInstructions>
+            <description>Search for quotes by referencing associated Opportunities and Contracts.</description>
+            <developerName>instruction_0_1779303974998</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>instruction_0_1779303974998</masterLabel>
+            <sortOrder>1</sortOrder>
+        </genAiPluginInstructions>
+        <genAiPluginInstructions>
+            <description>If no quotes are found, ask the user if they would like to refine their search criteria.</description>
+            <developerName>instruction_1_1779303975006</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>instruction_1_1779303975006</masterLabel>
+            <sortOrder>2</sortOrder>
+        </genAiPluginInstructions>
+        <genAiPluginInstructions>
+            <description>Ensure the account details are verified before proceeding with the search.</description>
+            <developerName>instruction_2_1779303975006</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>instruction_2_1779303975006</masterLabel>
+            <sortOrder>3</sortOrder>
+        </genAiPluginInstructions>
+        <genAiPluginInstructions>
+            <description>Provide a summary of the retrieved quotes, including key details such as quote ID, amount, and status.</description>
+            <developerName>instruction_3_1779303975006</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>instruction_3_1779303975006</masterLabel>
+            <sortOrder>4</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>Get_Open_Quotes_For_Account_179Hu00000097X1</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>Get_Open_Quotes_For_Account_179Hu00000097X1</fullName>
+            <description>Agentforce action: retrieves all open quotes for an account — directly on the account, via its opportunities, and via its contracts. Returns a formatted summary.</description>
+            <developerName>Get_Open_Quotes_For_Account_179Hu00000097X1</developerName>
+            <invocationTarget>Get_Open_Quotes_For_Account</invocationTarget>
+            <invocationTargetType>flow</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>Get_Open_Quotes_For_Account</localDeveloperName>
+            <masterLabel>Get Open Quotes For Account</masterLabel>
+            <progressIndicatorMessage>Searching for related quotes ...</progressIndicatorMessage>
+            <source>Get_Open_Quotes_For_Account</source>
+        </localActions>
+        <localDeveloperName>Quote_Search</localDeveloperName>
+        <masterLabel>Quote Search</masterLabel>
+        <pluginType>Topic</pluginType>
+        <scope>Your job is only to search for and retrieve quotes related to an account by leveraging Opportunities and Contracts. Do not handle unrelated inquiries or perform actions outside this scope.</scope>
+        <source>Quote_Search</source>
+    </localTopics>
+    <localTopics>
+        <fullName>RC_Score_My_Quote_16jHu0000008Z67</fullName>
+        <aiPluginUtterances>
+            <developerName>utterance_0_1763508766045</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>utterance_0_1763508766045</masterLabel>
+            <utterance>Score my quote
+
+Analyze this quote
+
+Run deal desk
+
+Score quote
+
+Review quote discounts
+
+Check discount policy for this quote</utterance>
+        </aiPluginUtterances>
+        <canEscalate>false</canEscalate>
+        <description>You are a Deal Desk assistant helping sales reps evaluate a single Salesforce Quote. You help them understand discount policy, revenue mix (ARR/MRR/One Time), and estimated commission based on backend flows.</description>
+        <developerName>RC_Score_My_Quote_16jHu0000008Z67</developerName>
+        <genAiPluginInstructions>
+            <description>You are the Deal Desk Agent. The platform always provides you a variable called varQuoteId that contains the Id of the quote the user is working on. Use this whenever an action needs the quote Id. Do not ask the user for the quote Id.
+
+When the user says “Score my quote” or asks you to analyze a quote:
+
+Call the RC_DealDesk_Score_Quote agent action to generate the analysis.
+
+Use the summary text returned by the action as your primary explanation to the user.
+
+Present the analysis in clear, business-friendly language.
+
+After you present the analysis, always ask:
+“Would you like me to apply the recommended discounts to the quote?”
+
+After you present the analysis and recommendations from the DealDesk model, you will wait for the user’s response.
+
+When the user says “Yes”, “Apply them”, or gives similar confirmation that they want the recommended discounts applied, call the RC_DealDesk – Apply Discounts agent action.
+
+Always pass the current quote Id using varQuoteId (mapped from CurrentRecordId).
+
+After the action returns, use its varSummaryMessage as your primary explanation back to the user, and you may also state how many lines were updated vs failed using the numeric outputs.
+
+If the action fails or returns 0 updated lines, apologize briefly and tell the user that the discounts could not be applied automatically and may require manual update.
+
+Keep responses short, clear, and business-friendly.</description>
+            <developerName>instruction_0_1763508766037</developerName>
+            <language xsi:nil="true"/>
+            <masterLabel>instruction_0_1763508766037</masterLabel>
+            <sortOrder>0</sortOrder>
+        </genAiPluginInstructions>
+        <language>en_US</language>
+        <localActionLinks>
+            <functionName>RC_DealDesk_Score_Quote_5_179Hu000000LRLf</functionName>
+        </localActionLinks>
+        <localActionLinks>
+            <functionName>RC_DealDesk_Apply_Discounts_Flow_179Hu000000LRLf</functionName>
+        </localActionLinks>
+        <localActions>
+            <fullName>RC_DealDesk_Apply_Discounts_Flow_179Hu000000LRLf</fullName>
+            <description>Apply recommended discounts from Deal Desk analysis to quote line items.</description>
+            <developerName>RC_DealDesk_Apply_Discounts_Flow_179Hu000000LRLf</developerName>
+            <invocationTarget>RC_DealDesk_Apply_Discounts_Flow</invocationTarget>
+            <invocationTargetType>flow</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>RC_DealDesk_Apply_Discounts_Flow</localDeveloperName>
+            <masterLabel>RC DealDesk Apply Discounts</masterLabel>
+            <progressIndicatorMessage>Applying discounts to quote</progressIndicatorMessage>
+            <source>RC_DealDesk_Apply_Discounts_Flow</source>
+        </localActions>
+        <localActions>
+            <fullName>RC_DealDesk_Score_Quote_5_179Hu000000LRLf</fullName>
+            <description>Score a quote and provide Deal Desk analysis and recommendations.</description>
+            <developerName>RC_DealDesk_Score_Quote_5_179Hu000000LRLf</developerName>
+            <invocationTarget>RC_DealDesk_Score_Quote_5</invocationTarget>
+            <invocationTargetType>flow</invocationTargetType>
+            <isConfirmationRequired>false</isConfirmationRequired>
+            <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+            <localDeveloperName>RC_DealDesk_Score_Quote_5</localDeveloperName>
+            <masterLabel>RC DealDesk Score Quote</masterLabel>
+            <progressIndicatorMessage>Analyzing your quote</progressIndicatorMessage>
+            <source>RC_DealDesk_Score_Quote_5</source>
+        </localActions>
+        <localDeveloperName>RC_Score_My_Quote</localDeveloperName>
+        <masterLabel>RC Score My Quote</masterLabel>
+        <pluginType>Topic</pluginType>
+        <scope>Your responsibilities in this topic are:
+- Understand that the user wants to “score” or analyze the current quote record in Salesforce.
+- Always operate on the current record context (the quote the agent is opened from), not on arbitrary or hypothetical quotes.
+- When you call the &quot;RC_DealDesk_Score_Quote&quot; agent action:
+  - Always pass the current record Id into the input field `varQuoteId`.
+  - Use the value the platform provides as `CurrentRecordId`. Do not invent or leave this blank.
+- Summarize results from the backend flows. Do not invent your own pricing or discount logic.</scope>
+    </localTopics>
+    <masterLabel>RC Deal Desk Agent - New</masterLabel>
+    <plannerActions>
+        <fullName>AnswerQuestionsWithKnowledge_16jHu0000008Z67</fullName>
+        <description>Answers questions about company policies and procedures, troubleshooting steps, or product information. For example: “What is your return policy?” “How do I fix an issue?” or “What features does a product have?”</description>
+        <developerName>AnswerQuestionsWithKnowledge_16jHu0000008Z67</developerName>
+        <invocationTarget>streamKnowledgeSearch</invocationTarget>
+        <invocationTargetType>standardInvocableAction</invocationTargetType>
+        <isConfirmationRequired>false</isConfirmationRequired>
+        <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+        <localDeveloperName>AnswerQuestionsWithKnowledge</localDeveloperName>
+        <masterLabel>Answer Questions with Knowledge</masterLabel>
+        <progressIndicatorMessage>Getting answers</progressIndicatorMessage>
+        <source>EmployeeCopilot__AnswerQuestionsWithKnowledge</source>
+    </plannerActions>
+    <plannerSurfaces>
+        <adaptiveResponseAllowed>false</adaptiveResponseAllowed>
+        <callRecordingAllowed>false</callRecordingAllowed>
+        <surface>SurfaceAction__Messaging</surface>
+        <surfaceType>Messaging</surfaceType>
+    </plannerSurfaces>
+    <plannerType>AiCopilot__ReAct</plannerType>
+</GenAiPlannerBundle>

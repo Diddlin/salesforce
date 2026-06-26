@@ -1,0 +1,15 @@
+{
+  "required" : [ "varQuoteId" ],
+  "unevaluatedProperties" : false,
+  "properties" : {
+    "varQuoteId" : {
+      "title" : "Quote Id",
+      "description" : "The Salesforce Quote Id to analyze.",
+      "lightning:type" : "lightning__textType",
+      "lightning:isPII" : false,
+      "copilotAction:isUserInput" : false
+    }
+  },
+  "lightning:type" : "lightning__objectType",
+  "lightning:textIndexed" : true
+}
