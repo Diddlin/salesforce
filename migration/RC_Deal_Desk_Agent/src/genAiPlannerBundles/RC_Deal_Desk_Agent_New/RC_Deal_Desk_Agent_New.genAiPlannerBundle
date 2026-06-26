@@ -64,13 +64,11 @@
             <localDeveloperName>Get_Open_Quotes_For_Account</localDeveloperName>
             <masterLabel>Get Open Quotes For Account</masterLabel>
             <progressIndicatorMessage>Searching for related quotes ...</progressIndicatorMessage>
-            <source>Get_Open_Quotes_For_Account</source>
         </localActions>
         <localDeveloperName>Quote_Search</localDeveloperName>
         <masterLabel>Quote Search</masterLabel>
         <pluginType>Topic</pluginType>
         <scope>Your job is only to search for and retrieve quotes related to an account by leveraging Opportunities and Contracts. Do not handle unrelated inquiries or perform actions outside this scope.</scope>
-        <source>Quote_Search</source>
     </localTopics>
     <localTopics>
         <fullName>RC_Score_My_Quote_16jHu0000008Z67</fullName>
@@ -141,7 +139,6 @@ Keep responses short, clear, and business-friendly.</description>
             <localDeveloperName>RC_DealDesk_Apply_Discounts_Flow</localDeveloperName>
             <masterLabel>RC DealDesk Apply Discounts</masterLabel>
             <progressIndicatorMessage>Applying discounts to quote</progressIndicatorMessage>
-            <source>RC_DealDesk_Apply_Discounts_Flow</source>
         </localActions>
         <localActions>
             <fullName>RC_DealDesk_Score_Quote_5_179Hu000000LRLf</fullName>
@@ -154,7 +151,6 @@ Keep responses short, clear, and business-friendly.</description>
             <localDeveloperName>RC_DealDesk_Score_Quote_5</localDeveloperName>
             <masterLabel>RC DealDesk Score Quote</masterLabel>
             <progressIndicatorMessage>Analyzing your quote</progressIndicatorMessage>
-            <source>RC_DealDesk_Score_Quote_5</source>
         </localActions>
         <localDeveloperName>RC_Score_My_Quote</localDeveloperName>
         <masterLabel>RC Score My Quote</masterLabel>

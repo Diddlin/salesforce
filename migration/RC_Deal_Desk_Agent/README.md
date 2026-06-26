@@ -5,6 +5,10 @@ Agentforce agent from the source org to another org.
 
 Source org: `davids test org` (General Org, `storm.amplitude27@salesforce.com`)
 
+> ✅ **Deployed & active** in `HeadlessOrg` (`storm.5d03b15a3bae76@salesforce.com`) on 2026-06-26 —
+> dependencies (with passing Apex tests), agent (Bot + planner v1, **Active**), and the permission set
+> all live. See the cross-org `<source>` fix note under **Deploy**.
+
 ## What's in this package
 
 | Component | API Name | Type | Notes |
@@ -57,23 +61,43 @@ Data: RC_DealDesk_Recommendation__c  +  custom fields on Quote / QuoteLineItem
 
 ## Deploy
 
-From the project root, validate first (dry run):
+> This folder ships its own `sfdx-project.json` (registers `src/` as the package dir) so
+> the manifests below resolve when you `cd` into it. Run all commands from
+> `migration/RC_Deal_Desk_Agent/`.
 
+A single combined deploy is **atomic**, and the agent (Bot + planner) depends on the flows/Apex/fields
+existing first. Deploy in **two steps**:
+
+**Step 1 — dependencies (with tests):**
 ```bash
-sf project deploy start \
-  --manifest migration/RC_Deal_Desk_Agent/manifest/package.xml \
-  --target-org <TARGET_ORG_ALIAS> \
-  --dry-run --ignore-conflicts
+cd migration/RC_Deal_Desk_Agent
+sf project deploy start --manifest manifest/package-deps.xml \
+  --test-level RunSpecifiedTests \
+  --tests GetOpenQuotesForAccountTest RC_DealDeskDiscountApplierTest RC_DealDeskDiscountExtractorTest RC_DealDeskJsonTrimmerTest \
+  --target-org <TARGET_ORG_ALIAS>
 ```
 
-Then deploy:
-
+**Step 2 — the agent (Bot + planner):**
 ```bash
-sf project deploy start \
-  --manifest migration/RC_Deal_Desk_Agent/manifest/package.xml \
-  --target-org <TARGET_ORG_ALIAS> \
-  --ignore-conflicts
+sf project deploy start --manifest manifest/package-agent.xml \
+  --target-org <TARGET_ORG_ALIAS>
 ```
+
+Manifests: `package-deps.xml` (everything except the agent), `package-agent.xml` (Bot + planner only),
+and `package.xml` (the full set, for reference).
+
+### ⚠️ Cross-org fix already applied: planner `<source>` elements removed
+When this planner is retrieved from its origin org, the custom inline topic/actions carry
+`<source>` pointers (e.g. `<source>Quote_Search</source>`) that reference **GenAiPlugin/GenAiFunction
+definitions that only exist in the origin org**. Deploying as-is fails with:
+
+> `Generative AI Plugin Definition ID: bad value for restricted picklist field: Quote_Search`
+> and `Required fields are missing: [PlannerId]` on the BotVersion (downstream symptom).
+
+Fix: delete those `<source>...</source>` lines from the custom `localTopics`/`localActions` in
+`src/genAiPlannerBundles/RC_Deal_Desk_Agent_New/RC_Deal_Desk_Agent_New.genAiPlannerBundle`
+(the inline definitions are self-contained; `invocationTarget` does the wiring). **Keep** the managed
+`EmployeeCopilot__AnswerQuestionsWithKnowledge` source. This has already been done in this package.
 
 ### Apex tests (included)
 Test classes are bundled and validated against the source org — all pass with coverage above 75%:
