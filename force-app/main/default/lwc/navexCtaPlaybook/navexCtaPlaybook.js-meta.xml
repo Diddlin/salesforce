@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>65.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>CTA Playbook Checklist</masterLabel>
+    <description
+  >Interactive Action Plan playbook checklist with progress, guidance, overdue highlighting and locked steps that are still waiting on a prerequisite.</description>
+    <targets>
+        <target>lightning__RecordPage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>ActionPlan</object>
+            </objects>
+            <property
+        name="cardTitle"
+        type="String"
+        label="Card Title"
+        description="Heading shown at the top of the component."
+        default="Playbook"
+      />
+            <property
+        name="guidanceText"
+        type="String"
+        label="Guidance Text"
+        description="Best practices shown in the collapsible guidance panel. Leave blank to use the Action Plan Template description."
+      />
+            <property
+        name="expandGuidance"
+        type="Boolean"
+        label="Expand Guidance By Default"
+        description="Show the guidance panel open when the page loads."
+        default="false"
+      />
+            <property
+        name="emptyMessage"
+        type="String"
+        label="Empty State Message"
+        description="Message shown when the action plan has no steps."
+        default="This action plan has no steps yet. Steps appear here once the plan is generated from its template."
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

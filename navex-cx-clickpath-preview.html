@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NAVEX CX — Click Path &amp; What's New vs Existing</title>
+    <style>
+      :root {
+        --blue: #0176d3;
+        --blue-d: #014486;
+        --bg: #f3f3f3;
+        --card: #fff;
+        --bd: #e5e5e5;
+        --tx: #181818;
+        --tw: #5c5c5c;
+        --green: #2e844a;
+        --amber: #fe9339;
+        --red: #ea001e;
+        --sh: 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.1);
+        /* provenance colors */
+        --ootb: #0176d3; /* native salesforce */
+        --sdo: #7f8de1; /* pre-existing SDO */
+        --new: #2e844a; /* new for NAVEX */
+        --nope: #c23934; /* can't be used */
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--tx);
+        font-size: 14px;
+      }
+      header {
+        background: var(--blue);
+        color: #fff;
+        padding: 16px 22px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 19px;
+      }
+      header p {
+        margin: 5px 0 0;
+        opacity: 0.9;
+        font-size: 13px;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 18px;
+      }
+
+      /* legend */
+      .legend {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: var(--sh);
+        padding: 14px 18px;
+        margin-bottom: 18px;
+      }
+      .legend h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+      }
+      .legend .items {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      .lg {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .chip {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 11px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+      }
+      .chip.ootb {
+        background: var(--ootb);
+      }
+      .chip.sdo {
+        background: var(--sdo);
+      }
+      .chip.new {
+        background: var(--new);
+      }
+      .chip.nope {
+        background: var(--nope);
+      }
+
+      /* step nav */
+      .steps {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .steps button {
+        border: 1px solid var(--bd);
+        background: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--tw);
+        box-shadow: var(--sh);
+        text-align: left;
+      }
+      .steps button:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+      .steps button.active {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+      }
+      .steps button .n {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #eee;
+        color: var(--tw);
+        text-align: center;
+        line-height: 20px;
+        font-size: 11px;
+        margin-right: 7px;
+      }
+      .steps button.active .n {
+        background: rgba(255, 255, 255, 0.3);
+        color: #fff;
+      }
+
+      .panel {
+        display: none;
+      }
+      .panel.on {
+        display: block;
+      }
+
+      /* breadcrumb click path */
+      .crumb {
+        background: #eef4ff;
+        border: 1px solid #cfe0ff;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        line-height: 1.9;
+      }
+      .crumb b {
+        color: var(--blue-d);
+      }
+      .crumb .k {
+        display: inline-block;
+        background: #fff;
+        border: 1px solid #cfe0ff;
+        border-radius: 6px;
+        padding: 2px 8px;
+        margin: 0 3px;
+        font-weight: 600;
+      }
+
+      /* mock UI */
+      .mock {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: var(--sh);
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+      .mocknav {
+        background: var(--blue);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 14px;
+        height: 42px;
+        font-size: 13px;
+      }
+      .mocknav .app {
+        font-weight: 700;
+      }
+      .mocktabs {
+        display: flex;
+        gap: 2px;
+        border-bottom: 1px solid var(--bd);
+        padding: 0 12px;
+        background: #fafafa;
+        flex-wrap: wrap;
+      }
+      .mocktabs div {
+        padding: 10px 13px;
+        font-size: 13px;
+        color: var(--tw);
+        border-bottom: 3px solid transparent;
+        cursor: default;
+      }
+      .mocktabs div.sel {
+        color: var(--blue);
+        border-bottom-color: var(--blue);
+        font-weight: 700;
+        background: #fff;
+      }
+      .subtabs {
+        display: flex;
+        gap: 2px;
+        padding: 8px 12px;
+        background: #fff;
+        border-bottom: 1px solid var(--bd);
+        flex-wrap: wrap;
+      }
+      .subtabs div {
+        padding: 6px 11px;
+        font-size: 12px;
+        border-radius: 14px;
+        background: #f0f0f0;
+        color: var(--tw);
+      }
+      .subtabs div.sel {
+        background: var(--blue);
+        color: #fff;
+        font-weight: 700;
+      }
+      .mockbody {
+        padding: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--tw);
+        border-bottom: 1px solid var(--bd);
+        padding: 8px 10px;
+        font-weight: 600;
+      }
+      td {
+        padding: 9px 10px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+      }
+      .dot.g {
+        background: var(--green);
+      }
+      .dot.a {
+        background: var(--amber);
+      }
+      .dot.r {
+        background: var(--red);
+      }
+      .b {
+        font-weight: 700;
+      }
+      .muted {
+        color: var(--tw);
+        font-size: 12px;
+      }
+      .risk-high {
+        color: var(--red);
+        font-weight: 700;
+      }
+      .risk-med {
+        color: var(--amber);
+        font-weight: 700;
+      }
+      .risk-low {
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .note {
+        border-left: 3px solid var(--blue);
+        background: #f7fbff;
+        padding: 11px 13px;
+        border-radius: 0 8px 8px 0;
+        font-size: 13px;
+        margin-top: 14px;
+      }
+      .note.warn {
+        border-left-color: var(--nope);
+        background: #fff6f5;
+      }
+      .note.ok {
+        border-left-color: var(--green);
+        background: #f4fbf6;
+      }
+
+      h2.sec {
+        font-size: 16px;
+        margin: 0 0 12px;
+      }
+      .prov {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: var(--sh);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .prov h4 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        color: var(--tw);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .prov ul {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      .prov li {
+        padding: 7px 0;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .prov li:first-child {
+        border-top: none;
+      }
+      .prov li .chip {
+        flex: none;
+        margin-top: 1px;
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 0 12px;
+      }
+      .bar .t {
+        flex: 1;
+        height: 9px;
+        background: #e5e5e5;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .bar .t i {
+        display: block;
+        height: 100%;
+        background: var(--blue);
+        border-radius: 5px;
+      }
+      .cbx {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #b0b0b0;
+        border-radius: 4px;
+        display: inline-block;
+        vertical-align: -3px;
+        margin-right: 8px;
+      }
+      .cbx.on {
+        background: var(--green);
+        border-color: var(--green);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>NAVEX CX Demo — Click Path &amp; Provenance</h1>
+      <p>
+        Meridian Health in the <b>Customer Success</b> app. Every element is
+        labelled so you know what we added vs what the org already had.
+      </p>
+    </header>
+
+    <div class="wrap">
+      <div class="legend">
+        <h3>Legend — two separate questions</h3>
+        <div class="items">
+          <div class="lg">
+            <span class="chip ootb">NATIVE</span> Standard Salesforce, out of
+            the box
+          </div>
+          <div class="lg">
+            <span class="chip sdo">ALREADY HERE</span> Pre-existing in the
+            Customer Success SDO
+          </div>
+          <div class="lg">
+            <span class="chip new">NEW</span> Added by us for NAVEX
+          </div>
+          <div class="lg">
+            <span class="chip nope">DON'T USE</span> Present but can't be driven
+            by our data
+          </div>
+        </div>
+        <div class="note" style="margin-top: 12px">
+          <b>The short version:</b> the demo engine was almost entirely already
+          here. We added <b>8 custom fields</b>, <b>2 page grids</b>, and
+          <b>the Meridian Health data</b>. Nothing else.
+        </div>
+      </div>
+
+      <div class="steps">
+        <button class="active" onclick="show(0, this)">
+          <span class="n">1</span>CTAs &amp; Playbooks
+        </button>
+        <button onclick="show(1, this)">
+          <span class="n">2</span>Clean CSM Timeline
+        </button>
+        <button onclick="show(2, this)">
+          <span class="n">3</span>Company → Contract → Product
+        </button>
+        <button onclick="show(3, this)">
+          <span class="n">4</span>Health &amp; KPIs
+        </button>
+        <button onclick="show(4, this)">
+          <span class="n">?</span>Account Plans (empty)
+        </button>
+        <button onclick="show(5, this)">
+          <span class="n">!</span>Avoid these
+        </button>
+      </div>
+
+      <!-- ============ 1. CTAs ============ -->
+      <div class="panel on">
+        <div class="crumb">
+          <b>Click path:</b> App Launcher
+          <span class="k">Customer Success</span> → account
+          <span class="k">Meridian Health</span> → tab
+          <span class="k">Success</span> → sub-tab <span class="k">CTAs</span>
+        </div>
+        <div class="mock">
+          <div class="mocknav">
+            <span class="app">Customer Success</span
+            ><span>Meridian Health</span>
+          </div>
+          <div class="mocktabs">
+            <div>Details</div>
+            <div>Intelligence</div>
+            <div class="sel">Success</div>
+            <div>Renew</div>
+            <div>Contacts</div>
+            <div>Service</div>
+            <div>Sales</div>
+          </div>
+          <div class="subtabs">
+            <div>Health</div>
+            <div>Account Plans</div>
+            <div class="sel">CTAs</div>
+            <div>Scorecards</div>
+            <div>Red Account</div>
+          </div>
+          <div class="mockbody">
+            <table>
+              <tr>
+                <th>Action Plan (CTA)</th>
+                <th>CTA Type</th>
+                <th>State</th>
+                <th>Progress</th>
+              </tr>
+              <tr>
+                <td class="b">LIFECYCLE: NPS Detractor Follow-up</td>
+                <td>Lifecycle</td>
+                <td><span class="dot a"></span>In Progress</td>
+                <td>3 of 6 tasks</td>
+              </tr>
+              <tr>
+                <td class="b">RISK: PolicyTech Adoption Review</td>
+                <td>Risk</td>
+                <td><span class="dot r"></span>Not Started</td>
+                <td>0 of 5 tasks</td>
+              </tr>
+            </table>
+            <div class="bar" style="margin-top: 16px">
+              <span class="muted">Detractor playbook</span>
+              <div class="t"><i style="width: 50%"></i></div>
+              <span class="b">50%</span>
+            </div>
+            <div class="muted">
+              <div><span class="cbx on"></span>1. Internal Sync</div>
+              <div><span class="cbx on"></span>2. Gather Data</div>
+              <div><span class="cbx on"></span>4. Prepare QBR Presentation</div>
+              <div><span class="cbx"></span>3. Analyze Data</div>
+              <div><span class="cbx"></span>5. Dry Run with Account Team</div>
+              <div><span class="cbx"></span>6. Customer QBR</div>
+            </div>
+            <div class="note ok">
+              <b>This is the answer to Josh's question</b> &mdash; "I'm not sure
+              if Salesforce has playbook functionality." Tasks auto-generate
+              from a template with progress tracking, natively.
+            </div>
+          </div>
+        </div>
+        <div class="prov">
+          <h4>What's what on this screen</h4>
+          <ul>
+            <li>
+              <span class="chip ootb">NATIVE</span>
+              <div>
+                <b>Action Plans</b> (ActionPlan / ActionPlanTemplate / Task)
+                &mdash; standard Salesforce. Inserting a plan from a template
+                auto-creates the checkable tasks and progress.
+                <i>Zero custom objects needed.</i>
+              </div>
+            </li>
+            <li>
+              <span class="chip sdo">ALREADY HERE</span>
+              <div>
+                <b>The playbook templates</b> (RISK:, LIFECYCLE:, EXPANSION:)
+                with 5&ndash;7 tasks each, the
+                <code>Tech_CTA_Type__c</code> field, the <b>CTAs</b> sub-tab,
+                and the <b>New CTA</b> button.
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>Only the two CTA records themselves</b>, created against
+                Meridian Health with realistic task completion.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ============ 2. Timeline ============ -->
+      <div class="panel">
+        <div class="crumb">
+          <b>Click path:</b> <span class="k">Meridian Health</span> →
+          <b>right sidebar</b> → tab <span class="k">Activity</span> &nbsp;<span
+            class="muted"
+            >(this is a sidebar tab, not one of the centre tabs)</span
+          >
+        </div>
+        <div class="mock">
+          <div class="mocknav">
+            <span class="app">Customer Success</span
+            ><span>Meridian Health</span>
+          </div>
+          <div class="subtabs" style="justify-content: flex-end">
+            <div>NBA</div>
+            <div>Engagement</div>
+            <div class="sel">Activity</div>
+          </div>
+          <div class="mockbody">
+            <table>
+              <tr>
+                <th>Activity</th>
+                <th>When</th>
+                <th>Status</th>
+              </tr>
+              <tr>
+                <td>Follow-up: Share PolicyTech feature roadmap</td>
+                <td>Upcoming</td>
+                <td>Not Started</td>
+              </tr>
+              <tr>
+                <td>Follow-up: Schedule Corporate Training QBR</td>
+                <td>Upcoming</td>
+                <td>Not Started</td>
+              </tr>
+              <tr>
+                <td>2. Gather Data</td>
+                <td>Yesterday</td>
+                <td><span class="dot g"></span>Completed</td>
+              </tr>
+              <tr>
+                <td>1. Internal Sync</td>
+                <td>Yesterday</td>
+                <td><span class="dot g"></span>Completed</td>
+              </tr>
+              <tr>
+                <td>Sent NPS detractor follow-up note</td>
+                <td>Jul 27</td>
+                <td><span class="dot g"></span>Completed</td>
+              </tr>
+              <tr>
+                <td>EBR &mdash; Q2 Business Review with Meridian</td>
+                <td>Jul 25</td>
+                <td><span class="dot g"></span>Completed</td>
+              </tr>
+              <tr>
+                <td>Check-in: PolicyTech adoption concerns</td>
+                <td>Jul 18</td>
+                <td><span class="dot g"></span>Completed</td>
+              </tr>
+            </table>
+            <div class="note ok">
+              <b>Meeting → follow-up task</b> is the Gainsight behaviour Josh
+              liked: log the EBR, add follow-ups, and they land in the CSM's
+              task list automatically.
+            </div>
+          </div>
+        </div>
+        <div class="prov">
+          <h4>What's what on this screen</h4>
+          <ul>
+            <li>
+              <span class="chip ootb">NATIVE</span>
+              <div>
+                <b>The activity timeline itself</b> &mdash; standard Salesforce
+                activity panel with filtering. Nothing custom.
+              </div>
+            </li>
+            <li>
+              <span class="chip sdo">ALREADY HERE</span>
+              <div>
+                The <b>Activity / NBA / Engagement</b> sidebar was already
+                configured on this page.
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>The 15 Task records</b> &mdash; the EBR, the check-in call,
+                the NPS note, the playbook tasks, and the two meeting
+                follow-ups.
+              </div>
+            </li>
+          </ul>
+          <div class="note">
+            <b>Honest caveat:</b> this is the standard timeline, not a separate
+            "CX-only" timeline. Josh's complaint that the feed gets cluttered by
+            BDR/support noise is addressed by the built-in filters, not by a
+            custom clean view.
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 3. Relationship ============ -->
+      <div class="panel">
+        <div class="crumb">
+          <b>Click path:</b> <span class="k">Meridian Health</span> → tab
+          <span class="k">Renew</span> → grids
+          <span class="k">Contract Health</span> +
+          <span class="k">Product Health by Contract</span>
+        </div>
+        <div class="mock">
+          <div class="mocknav">
+            <span class="app">Customer Success</span
+            ><span>Meridian Health</span>
+          </div>
+          <div class="mocktabs">
+            <div>Details</div>
+            <div>Intelligence</div>
+            <div>Success</div>
+            <div class="sel">Renew</div>
+            <div>Contacts</div>
+            <div>Service</div>
+            <div>Sales</div>
+          </div>
+          <div class="mockbody">
+            <h2 class="sec">Contract Health</h2>
+            <table>
+              <tr>
+                <th>Contract</th>
+                <th>Contract Health</th>
+                <th>Renewal Risk</th>
+              </tr>
+              <tr>
+                <td class="b">00000106</td>
+                <td>72</td>
+                <td class="risk-med">Medium</td>
+              </tr>
+              <tr>
+                <td class="b">00000107</td>
+                <td>83</td>
+                <td class="risk-low">Low</td>
+              </tr>
+              <tr>
+                <td class="b">00000108</td>
+                <td>51</td>
+                <td class="risk-high">High</td>
+              </tr>
+            </table>
+            <h2 class="sec" style="margin-top: 20px">
+              Product Health by Contract
+            </h2>
+            <table>
+              <tr>
+                <th>Product (Asset)</th>
+                <th>Product Health</th>
+                <th>Renewal Risk</th>
+                <th>Contract</th>
+              </tr>
+              <tr>
+                <td>EthicsPoint Hotline</td>
+                <td class="b">88</td>
+                <td class="risk-low">Low</td>
+                <td>00000106</td>
+              </tr>
+              <tr>
+                <td>Case Management</td>
+                <td class="b">84</td>
+                <td class="risk-low">Low</td>
+                <td>00000106</td>
+              </tr>
+              <tr>
+                <td>PolicyTech Policy Management</td>
+                <td class="b" style="color: var(--red)">47</td>
+                <td class="risk-high">High</td>
+                <td>00000106</td>
+              </tr>
+              <tr>
+                <td>Compliance Training (Clinical Team)</td>
+                <td class="b">85</td>
+                <td class="risk-low">Low</td>
+                <td>00000107</td>
+              </tr>
+              <tr>
+                <td>Compliance Training (Corporate Team)</td>
+                <td class="b" style="color: var(--red)">49</td>
+                <td class="risk-high">High</td>
+                <td>00000108</td>
+              </tr>
+            </table>
+            <div class="note ok">
+              <b>Two stories Gainsight couldn't tell:</b><br />
+              1. One contract, mixed health &mdash; Hotline is fine (88) but
+              <b>PolicyTech is at risk (47)</b> on the <i>same</i> contract
+              00000106. Josh's "renewal's not at risk, but PolicyTech is at risk
+              long-term."<br />
+              2. <b>Same product, two contracts, opposite health</b> &mdash;
+              Clinical Training 85 vs Corporate Training 49. Josh's "one team
+              thinks training is awesome, the other thinks it's not meeting
+              their needs."
+            </div>
+          </div>
+        </div>
+        <div class="prov">
+          <h4>What's what on this screen</h4>
+          <ul>
+            <li>
+              <span class="chip ootb">NATIVE</span>
+              <div>
+                <b>Account → Contract</b> and <b>Asset → Product2</b> are
+                standard objects and relationships. The grids are the standard
+                dynamic related list component.
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>5 custom fields:</b>
+                <code>Contract.Contract_Health__c</code>,
+                <code>Contract.Renewal_Risk__c</code>,
+                <code>Asset.Product_Health__c</code>,
+                <code>Asset.Renewal_Risk__c</code>, and critically
+                <code>Asset.Contract__c</code>.
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>The two grids on this tab</b> &mdash; added to the record
+                page so the custom fields are actually visible. The stock
+                Contracts/Assets related lists (under <b>Service</b>) can't show
+                them.
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div><b>3 Contracts and 5 Assets</b> for Meridian.</div>
+            </li>
+          </ul>
+          <div class="note warn">
+            <b>The one real gap in Salesforce:</b> there is no native
+            Asset→Contract link. <code>Asset.Contract__c</code> is the single
+            custom field doing genuine work here &mdash; it's what makes the
+            company→contract→product hierarchy possible, and it's Josh's #1
+            hurdle.
+          </div>
+          <div class="note">
+            <b>Don't hardcode contract numbers.</b> They were 00000103&ndash;105
+            and are now 00000106&ndash;108; auto-number increments every time
+            the demo data reloads.
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 4. Health ============ -->
+      <div class="panel">
+        <div class="crumb">
+          <b>Click path:</b> <span class="k">Meridian Health</span> →
+          <b>highlights panel</b> (top of page) &nbsp;+&nbsp; tab
+          <span class="k">Success</span> → sub-tab
+          <span class="k">Scorecards</span>
+        </div>
+        <div class="mock">
+          <div class="mocknav">
+            <span class="app">Customer Success</span
+            ><span>Meridian Health</span>
+          </div>
+          <div class="mockbody">
+            <table>
+              <tr>
+                <th>Field</th>
+                <th>Value</th>
+                <th>Source</th>
+              </tr>
+              <tr>
+                <td>Health Score</td>
+                <td class="b">64</td>
+                <td>
+                  <span class="chip new">NEW</span>
+                  <code>Account.Health_Score__c</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Latest NPS Response</td>
+                <td class="b">6</td>
+                <td>
+                  <span class="chip new">NEW</span> <code>Account.NPS__c</code>
+                </td>
+              </tr>
+              <tr>
+                <td>NPS Segment</td>
+                <td class="b" style="color: var(--red)">Detractor</td>
+                <td><span class="chip new">NEW</span> formula field</td>
+              </tr>
+              <tr>
+                <td>ARR</td>
+                <td class="b">$348,500</td>
+                <td><span class="chip sdo">ALREADY HERE</span></td>
+              </tr>
+              <tr>
+                <td>CSAT / Propensity to renew / LTV</td>
+                <td class="b">8.8 / Likely / $545,100</td>
+                <td><span class="chip sdo">ALREADY HERE</span></td>
+              </tr>
+            </table>
+            <div class="note">
+              <b>Scorecards</b> sub-tab uses
+              <code>Tech_Success_Scorecard__c</code> &mdash; a pre-existing SDO
+              object breaking health down by measure. We added one scorecard
+              record for Meridian.
+            </div>
+          </div>
+        </div>
+        <div class="prov">
+          <h4>What's what on this screen</h4>
+          <ul>
+            <li>
+              <span class="chip ootb">NATIVE</span>
+              <div>The <b>highlights panel</b> component itself.</div>
+            </li>
+            <li>
+              <span class="chip sdo">ALREADY HERE</span>
+              <div>
+                <b
+                  >ARR, CSAT, Propensity to Renew, Lifetime Value, Engagement
+                  Score</b
+                >, and the <code>Tech_Success_Scorecard__c</code> object +
+                Scorecards sub-tab. The left panel is a custom SDO component,
+                which is why it shows these rather than our fields.
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>3 custom fields</b>: <code>Health_Score__c</code>,
+                <code>NPS__c</code>, <code>NPS_Segment__c</code> (formula
+                deriving Detractor/Passive/Promoter), plus a scorecard record.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ============ 5. Account plans ============ -->
+      <div class="panel">
+        <div class="crumb">
+          <b>Where you looked:</b> tab <span class="k">Success</span> → sub-tab
+          <span class="k">Account Plans</span> &nbsp;→&nbsp; <b>empty</b>
+        </div>
+        <div class="prov">
+          <h4>Why there's no Account Plan &mdash; and it's a simple reason</h4>
+          <ul>
+            <li>
+              <span class="chip ootb">NATIVE</span>
+              <div>
+                <b><code>AccountPlan</code> is a standard Salesforce object</b>
+                and it works fine in this org.
+              </div>
+            </li>
+            <li>
+              <span class="chip sdo">ALREADY HERE</span>
+              <div>
+                The <b>Account Plans sub-tab is already on the page</b>, wired
+                to that object.
+              </div>
+            </li>
+            <li>
+              <span class="chip nope">MISSING</span>
+              <div>
+                <b>There are only 2 AccountPlan records in the entire org</b>
+                &mdash; "Verde Account Plan FY26" and "2026 CTW Partners Joint
+                Business Plan", the two SDO showcase accounts.
+                <b>Meridian Health simply doesn't have one</b>, because our
+                build never created it.
+              </div>
+            </li>
+          </ul>
+          <div class="note">
+            <b>Nothing is broken.</b> The tab is empty purely because no record
+            exists. Creating one Account Plan for Meridian would fill it &mdash;
+            and it maps well to the "account plan with actions split across CSM
+            and AE" story. I did <i>not</i> create it, since that writes to the
+            org and you'd asked me to explain rather than change things. Say the
+            word and it's a one-line fix.
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 6. Avoid ============ -->
+      <div class="panel">
+        <div class="prov">
+          <h4>Two things on the page you should <i>not</i> lean on</h4>
+          <ul>
+            <li>
+              <span class="chip nope">DON'T USE</span>
+              <div>
+                <b>The big "Health Score 49" card</b> (top of Details, with the
+                sparkline). This is a <b>CRM Analytics dashboard</b>, not an
+                Account field. <code>Tech_Cloud_Health_Score__c</code> is null
+                and our real score is <b>64</b>. The 49 is unrelated sample data
+                and can't be changed by editing records.
+              </div>
+            </li>
+            <li>
+              <span class="chip nope">DON'T USE</span>
+              <div>
+                <b>The "Product Portfolio" treemap</b> ("No results found"). It
+                reads a <b>static CSV dataset from 2024</b> with no recipe
+                behind it, containing only Verde's and Accusage's rows. It
+                genuinely cannot be populated for Meridian without overwriting
+                another account's data.
+                <b>Use the Renew tab grids instead</b> &mdash; that's exactly
+                why we built them.
+              </div>
+            </li>
+          </ul>
+          <div class="note warn">
+            <b>Practical advice for the demo:</b> stay out of the
+            <b>Intelligence</b> tab and don't dwell on the top Health card.
+            Drive the health story from the <b>highlights panel</b> (64 /
+            Detractor), the <b>Scorecards</b> sub-tab, and the
+            <b>Renew</b> grids &mdash; all of which reflect real Meridian data.
+          </div>
+        </div>
+        <div class="prov">
+          <h4>Everything we added, in one list</h4>
+          <ul>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>8 custom fields</b> &mdash; Account: Health_Score__c, NPS__c,
+                NPS_Segment__c · Contract: Contract_Health__c, Renewal_Risk__c ·
+                Asset: Contract__c, Product_Health__c, Renewal_Risk__c
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>2 page grids</b> on the Renew tab (Contract Health, Product
+                Health by Contract)
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>1 permission set</b> (NAVEX CX Demo) for field access
+              </div>
+            </li>
+            <li>
+              <span class="chip new">NEW</span>
+              <div>
+                <b>Meridian Health data</b> &mdash; 3 Contracts, 5 Assets, 2
+                Action Plans, 15 Tasks, 1 Scorecard
+              </div>
+            </li>
+            <li>
+              <span class="chip sdo">ALREADY HERE</span>
+              <div>
+                <b>Everything else</b> &mdash; the app, the record page, all
+                sub-tabs, the playbook templates, the CTA type field, the
+                scorecard object, the highlights panel, the activity timeline
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function show(i, btn) {
+        document.querySelectorAll(".panel").forEach(function (p, ix) {
+          p.classList.toggle("on", ix === i);
+        });
+        document.querySelectorAll(".steps button").forEach(function (b) {
+          b.classList.remove("active");
+        });
+        btn.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

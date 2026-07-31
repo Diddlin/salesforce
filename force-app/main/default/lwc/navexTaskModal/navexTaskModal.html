@@ -1,0 +1,68 @@
+<template>
+  <lightning-modal-header label={label}></lightning-modal-header>
+
+  <lightning-modal-body>
+    <template lwc:if={hasError}>
+      <div class="form-error" role="alert">
+        <lightning-icon
+          icon-name="utility:error"
+          variant="error"
+          size="x-small"
+        ></lightning-icon>
+        <span>{errorMessage}</span>
+      </div>
+    </template>
+
+    <lightning-record-edit-form
+      object-api-name="Task"
+      record-id={taskId}
+      onsubmit={handleSubmit}
+      onsuccess={handleSuccess}
+      onerror={handleError}
+    >
+      <lightning-messages></lightning-messages>
+      <div class="form-grid">
+        <lightning-input-field
+          field-name="Subject"
+          required
+          class="form-grid__full"
+          data-first-focus
+        ></lightning-input-field>
+        <lightning-input-field field-name="Status"></lightning-input-field>
+        <lightning-input-field field-name="Priority"></lightning-input-field>
+        <lightning-input-field
+          field-name="ActivityDate"
+        ></lightning-input-field>
+        <lightning-input-field field-name="OwnerId"></lightning-input-field>
+        <template lwc:if={showRelatedTo}>
+          <lightning-input-field
+            field-name="WhatId"
+            value={defaultWhatId}
+            class="form-grid__full"
+          ></lightning-input-field>
+        </template>
+        <lightning-input-field
+          field-name="Description"
+          class="form-grid__full"
+        ></lightning-input-field>
+      </div>
+    </lightning-record-edit-form>
+  </lightning-modal-body>
+
+  <lightning-modal-footer>
+    <lightning-button
+      label="Cancel"
+      variant="neutral"
+      onclick={handleCancel}
+      disabled={isSaving}
+      class="footer-button"
+    ></lightning-button>
+    <lightning-button
+      label={saveLabel}
+      variant="brand"
+      onclick={handleSave}
+      disabled={isSaving}
+      class="footer-button"
+    ></lightning-button>
+  </lightning-modal-footer>
+</template>

@@ -1,0 +1,311 @@
+<template>
+  <lightning-card icon-name="standard:action_list_component">
+    <span slot="title" class="card-title">
+      <span class="card-title__text">{cardTitle}</span>
+      <template lwc:if={hasCtaType}>
+        <span class={ctaTypeClass}>{ctaType}</span>
+      </template>
+    </span>
+
+    <div slot="actions" class="card-actions">
+      <template lwc:if={canCreateSteps}>
+        <lightning-button
+          label="New Step"
+          icon-name="utility:add"
+          variant="neutral"
+          onclick={handleNewStep}
+          disabled={newStepDisabled}
+          class="card-actions__new"
+        ></lightning-button>
+      </template>
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        variant="border-filled"
+        alternative-text="Refresh playbook"
+        title="Refresh playbook"
+        onclick={handleRefresh}
+        disabled={isLoading}
+      ></lightning-button-icon>
+    </div>
+
+    <div class="playbook" aria-busy={isLoading}>
+      <!-- Loading -->
+      <template lwc:if={isLoading}>
+        <div class="skeleton" role="status">
+          <span class="slds-assistive-text">Loading playbook</span>
+          <div class="skeleton__line skeleton__line_title"></div>
+          <div class="skeleton__line skeleton__line_bar"></div>
+          <div class="skeleton__line"></div>
+          <div class="skeleton__line"></div>
+          <div class="skeleton__line skeleton__line_short"></div>
+        </div>
+      </template>
+
+      <!-- Error -->
+      <template lwc:elseif={errorMessage}>
+        <div class="error-boundary" role="alert">
+          <lightning-icon
+            icon-name="utility:error"
+            variant="error"
+            size="small"
+          ></lightning-icon>
+          <div class="error-boundary__content">
+            <p class="error-boundary__title">
+              This playbook could not be loaded
+            </p>
+            <p class="error-boundary__detail">{errorMessage}</p>
+            <lightning-button
+              label="Try again"
+              variant="neutral"
+              onclick={handleRefresh}
+              class="error-boundary__action"
+            ></lightning-button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Loaded -->
+      <template lwc:else>
+        <div class="plan-header">
+          <h2 class="plan-header__name">{planName}</h2>
+          <div class="plan-header__meta">
+            <template lwc:if={hasPlanState}>
+              <span class="state-pill">{planState}</span>
+            </template>
+            <template lwc:if={hasStartDate}>
+              <span class="plan-header__dates">
+                <lightning-icon
+                  icon-name="utility:event"
+                  size="xx-small"
+                  class="plan-header__date-icon"
+                ></lightning-icon>
+                <lightning-formatted-date-time
+                  value={startDate}
+                  year="numeric"
+                  month="short"
+                  day="2-digit"
+                  time-zone="UTC"
+                ></lightning-formatted-date-time>
+                <template lwc:if={hasEndDate}>
+                  <span aria-hidden="true">&ndash;</span>
+                  <span class="slds-assistive-text">through</span>
+                  <lightning-formatted-date-time
+                    value={endDate}
+                    year="numeric"
+                    month="short"
+                    day="2-digit"
+                    time-zone="UTC"
+                  ></lightning-formatted-date-time>
+                </template>
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-block">
+          <div class="progress-block__labels">
+            <span class="progress-block__summary">{progressSummary}</span>
+            <span class="progress-block__percent">{percentComplete}%</span>
+          </div>
+          <div
+            class="progress"
+            role="progressbar"
+            aria-valuenow={percentComplete}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label={progressLabel}
+          >
+            <div class={progressFillClass} style={progressStyle}></div>
+          </div>
+          <span class="slds-assistive-text" aria-live="polite" role="status"
+            >{liveMessage}</span
+          >
+        </div>
+
+        <!-- Guidance -->
+        <template lwc:if={hasGuidance}>
+          <div class="guidance">
+            <button
+              class="guidance__toggle"
+              type="button"
+              aria-expanded={guidanceOpen}
+              aria-controls="guidance-body"
+              onclick={handleGuidanceToggle}
+            >
+              <lightning-icon
+                icon-name={guidanceIcon}
+                size="xx-small"
+                class="guidance__chevron"
+              ></lightning-icon>
+              <span>Best practices &amp; guidance</span>
+            </button>
+            <template lwc:if={guidanceOpen}>
+              <div id="guidance-body" class="guidance__body">
+                <lightning-formatted-text
+                  value={guidance}
+                ></lightning-formatted-text>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <template lwc:if={isReadOnly}>
+          <p class="read-only-note" role="status">
+            <lightning-icon
+              icon-name="utility:lock"
+              size="xx-small"
+            ></lightning-icon>
+            <span
+              >You have read-only access, so steps can&apos;t be checked off
+              here.</span
+            >
+          </p>
+        </template>
+
+        <!-- Checklist -->
+        <template lwc:if={showChecklist}>
+          <ul class="playbook-list">
+            <template for:each={items} for:item="item">
+              <li key={item.key} class={item.rowClass}>
+                <div class="playbook-row__inner">
+                  <!-- Completion control: the ONLY thing that toggles the step -->
+                  <template lwc:if={item.isWaiting}>
+                    <span
+                      class="playbook-row__lock"
+                      title="Waiting on a previous step"
+                    >
+                      <lightning-icon
+                        icon-name="utility:lock"
+                        size="x-small"
+                        alternative-text="Locked"
+                      ></lightning-icon>
+                    </span>
+                  </template>
+                  <template lwc:else>
+                    <input
+                      type="checkbox"
+                      class="playbook-row__checkbox"
+                      id={item.checkboxId}
+                      checked={item.isComplete}
+                      disabled={item.toggleDisabled}
+                      data-task-id={item.taskId}
+                      data-item-id={item.itemId}
+                      onchange={handleToggle}
+                    />
+                    <label for={item.checkboxId} class="slds-assistive-text"
+                      >{item.checkboxLabel}</label
+                    >
+                  </template>
+
+                  <span class="playbook-row__body">
+                    <!-- Subject: a link to the Task, never a completion control -->
+                    <template lwc:if={item.isWaiting}>
+                      <span class="playbook-row__subject">{item.subject}</span>
+                    </template>
+                    <template lwc:else>
+                      <a
+                        href={item.taskUrl}
+                        class={item.subjectClass}
+                        title={item.subjectTitle}
+                        data-task-id={item.taskId}
+                        onclick={handleSubjectClick}
+                        >{item.subject}</a
+                      >
+                    </template>
+                    <span class="slds-assistive-text"
+                      >Status: {item.statusText}</span
+                    >
+
+                    <span class="playbook-row__meta">
+                      <template lwc:if={item.isWaiting}>
+                        <span class="playbook-row__waiting-note">
+                          Waiting on a previous step
+                        </span>
+                      </template>
+                      <template lwc:if={item.hasDueDate}>
+                        <span class={item.dueDateClass}>
+                          <lightning-icon
+                            icon-name="utility:date_input"
+                            size="xx-small"
+                            class="playbook-row__meta-icon"
+                          ></lightning-icon>
+                          <lightning-formatted-date-time
+                            value={item.dueDate}
+                            year="numeric"
+                            month="short"
+                            day="2-digit"
+                            time-zone="UTC"
+                          ></lightning-formatted-date-time>
+                          <template lwc:if={item.isOverdue}>
+                            <span class="playbook-row__overdue-tag"
+                              >Overdue</span
+                            >
+                          </template>
+                        </span>
+                      </template>
+                      <template lwc:if={item.isHighPriority}>
+                        <span class="priority-pill">High priority</span>
+                      </template>
+                      <template lwc:if={item.isRequired}>
+                        <span class="required-pill">Required</span>
+                      </template>
+                      <template lwc:if={item.isAdHoc}>
+                        <span class="adhoc-pill">Added</span>
+                      </template>
+                    </span>
+                  </span>
+
+                  <template lwc:if={item.hasOwner}>
+                    <span class="assignee">
+                      <span class="assignee__avatar" aria-hidden="true"
+                        >{item.ownerInitials}</span
+                      >
+                      <span class="assignee__name">{item.ownerName}</span>
+                    </span>
+                  </template>
+
+                  <span class="playbook-row__actions">
+                    <lightning-button-menu
+                      icon-name="utility:threedots"
+                      icon-size="x-small"
+                      variant="border-filled"
+                      menu-alignment="auto-right"
+                      alternative-text={item.menuLabel}
+                      title={item.menuLabel}
+                      disabled={item.menuDisabled}
+                      data-item-id={item.itemId}
+                      data-task-id={item.taskId}
+                      onselect={handleRowAction}
+                    >
+                      <template for:each={item.menuActions} for:item="action">
+                        <lightning-menu-item
+                          key={action.value}
+                          value={action.value}
+                          label={action.label}
+                          icon-name={action.iconName}
+                        ></lightning-menu-item>
+                      </template>
+                    </lightning-button-menu>
+                  </span>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </template>
+
+        <!-- Empty -->
+        <template lwc:if={showEmptyState}>
+          <div class="empty-state" role="status">
+            <lightning-icon
+              icon-name="utility:checklist"
+              size="large"
+            ></lightning-icon>
+            <h3 class="empty-state__title">No steps yet</h3>
+            <p class="empty-state__message">{emptyMessage}</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </lightning-card>
+</template>

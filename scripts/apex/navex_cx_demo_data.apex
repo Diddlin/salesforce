@@ -10,6 +10,12 @@ Id ACCT = '001Hs00005wLdgKIAS';            // Meridian Health
 Id QBR_VER  = '0PTHs000000MtCEOA0';         // LIFECYCLE: Upcoming QBR (template version)
 Id RISK_VER = '0PTHs000000MtCFOA0';         // RISK: Adoption - Configuration Review (CS)
 
+// Account external key used by the Customer Success SDO. Tech_Account_Product_Attributes__c
+// rows join to the account through Account_Ext_ID__c == Account.External_ID__c, and the
+// NEW_Tech_Success_Account_Summary CRM Analytics dashboard is filtered on the same key.
+// Existing org values run Account.001-Account.030 plus Tech.953 (CTW) / Tech.954 (Verde).
+String ACCT_EXT_ID = 'Tech.955';           // Meridian Health
+
 // ---- helper: colored indicator (matches existing scorecard convention) ----
 Map<String,String> ind = new Map<String,String>{
   'green'  => '<img src="/img/samples/color_green.gif" alt="green" style="height:30px; width:30px;" border="0"/>',
@@ -23,9 +29,11 @@ delete [SELECT Id FROM Contract WHERE AccountId = :ACCT];
 delete [SELECT Id FROM Tech_Success_Scorecard__c WHERE Tech_Account__c = :ACCT];
 delete [SELECT Id FROM ActionPlan WHERE TargetId = :ACCT];
 delete [SELECT Id FROM Task WHERE WhatId = :ACCT];
+delete [SELECT Id FROM Tech_Account_Product_Attributes__c WHERE Account_Ext_ID__c = :ACCT_EXT_ID];
 
 // ---------------------------------------------------------------- ACCOUNT
-Account a = new Account(Id = ACCT, Health_Score__c = 64, NPS__c = 6); // NPS 6 => Detractor
+Account a = new Account(Id = ACCT, Health_Score__c = 64, NPS__c = 6, // NPS 6 => Detractor
+                        External_ID__c = ACCT_EXT_ID);
 update a;
 
 // ---------------------------------------------------------------- PRODUCTS (reuse by name)
@@ -73,6 +81,67 @@ List<Asset> assets = new List<Asset>{
 };
 insert assets;
 
+// ------------------------------------------- PRODUCT PORTFOLIO (Tech_Account_Product_Attributes__c)
+// The Customer Success SDO stores per-product analytics on this object, joined to the account
+// by Account_Ext_ID__c (text) rather than a lookup. Ten monthly snapshots per product so any
+// trend/sparkline has a series to draw. Declining products (PolicyTech, Corporate Training)
+// start healthy and degrade; healthy products stay flat.
+//   product name | PROD_External_ID__c | health start->end | util start->end | churn | ptb | renewal (months out) | ARR
+List<List<Object>> portfolio = new List<List<Object>>{
+  new List<Object>{ 'EthicsPoint Hotline',                  'Tech.RCA.9001', 84, 88, 0.78, 0.86,  8, 62,  9, 148000 },
+  new List<Object>{ 'Case Management',                      'Tech.RCA.9002', 80, 84, 0.71, 0.79, 12, 58,  9,  96000 },
+  new List<Object>{ 'PolicyTech Policy Management',         'Tech.RCA.9003', 72, 47, 0.62, 0.31, 62, 18,  3, 121000 },
+  new List<Object>{ 'Compliance Training (Clinical Team)',  'Tech.RCA.9004', 81, 85, 0.76, 0.83, 10, 55,  8,  74000 },
+  new List<Object>{ 'Compliance Training (Corporate Team)', 'Tech.RCA.9005', 74, 49, 0.68, 0.34, 58, 15,  2,  69000 }
+};
+Integer MONTHS = 10;
+List<Tech_Account_Product_Attributes__c> portRows = new List<Tech_Account_Product_Attributes__c>();
+Integer seq = 0;
+for (List<Object> p : portfolio) {
+  String  pName   = (String)  p[0];
+  String  pExtId  = (String)  p[1];
+  Decimal hStart  = (Decimal) Decimal.valueOf(String.valueOf(p[2]));
+  Decimal hEnd    = (Decimal) Decimal.valueOf(String.valueOf(p[3]));
+  Decimal uStart  = (Decimal) Decimal.valueOf(String.valueOf(p[4]));
+  Decimal uEnd    = (Decimal) Decimal.valueOf(String.valueOf(p[5]));
+  Decimal churn   = (Decimal) Decimal.valueOf(String.valueOf(p[6]));
+  Decimal ptb     = (Decimal) Decimal.valueOf(String.valueOf(p[7]));
+  Integer renewMo = (Integer) p[8];
+  Decimal arr     = (Decimal) Decimal.valueOf(String.valueOf(p[9]));
+  Date    renewal = Date.today().addMonths(renewMo);
+  for (Integer i = 0; i < MONTHS; i++) {
+    // i = 0 is the oldest snapshot, i = MONTHS-1 is the current month
+    Decimal t = Decimal.valueOf(i).divide(MONTHS - 1, 4);           // 0.0 -> 1.0
+    Decimal health = (hStart + (hEnd - hStart) * t).setScale(0);
+    Decimal util   = (uStart + (uEnd - uStart) * t).setScale(4);
+    // churn/propensity only reach their headline value at the latest snapshot
+    Decimal churnI = (churn * (0.55 + 0.45 * t)).setScale(0);
+    Decimal ptbI   = (ptb   * (0.70 + 0.30 * t)).setScale(0);
+    seq++;
+    portRows.add(new Tech_Account_Product_Attributes__c(
+      Name                         = 'Tech.Account.Prod.Id.9' + String.valueOf(1000 + seq),
+      TECH_ACCT_PROD_ID__c         = 'Tech.Account.Prod.Id.9' + String.valueOf(1000 + seq),
+      Account_Ext_ID__c            = ACCT_EXT_ID,
+      PROD_External_ID__c          = pExtId,
+      Product_Name__c              = pName,
+      Industry__c                  = 'Healthcare',
+      Date__c                      = Date.today().addMonths(i - (MONTHS - 1)),
+      Renewal_Date__c              = renewal,
+      Customer_Health_Score__c     = health,
+      Predicted_Customer_Health__c = (health - (100 - health) / 8).setScale(0),
+      Utilization__c               = util,
+      consumption__c               = (util * 0.94).setScale(2),
+      Engagement__c                = (util * 1.02 > 1 ? 1 : util * 1.02).setScale(2),
+      Predicted_Churn__c           = churnI,
+      Propensity_to_Buy__c         = ptbI,
+      Cases__c                     = health < 60 ? 7 : 2,
+      Revenue_To_Date__c           = (arr / 12 * (i + 1)).setScale(2),
+      Revenue_Type__c              = 'Existing'
+    ));
+  }
+}
+insert portRows;
+
 // ---------------------------------------------------------------- SCORECARD (company-level health breakdown)
 List<Tech_Success_Scorecard__c> sc = new List<Tech_Success_Scorecard__c>{
   new Tech_Success_Scorecard__c(Tech_Account__c=ACCT, Measure__c='Total Platform Usage', Measure_Category__c='Adoption', Score__c=82, Date_Modified__c=Date.today()),
@@ -107,4 +176,4 @@ List<ActionPlan> aps = new List<ActionPlan>{
 };
 insert aps;
 
-System.debug('NAVEX_CX_DONE Account=' + ACCT + ' Contracts=' + new List<Id>{c1.Id,c2.Id,c3.Id} + ' Assets=' + assets.size() + ' Scorecards=' + sc.size() + ' Tasks=' + tasks.size() + ' ActionPlans=' + aps.size());
+System.debug('NAVEX_CX_DONE Account=' + ACCT + ' ExtId=' + ACCT_EXT_ID + ' Contracts=' + new List<Id>{c1.Id,c2.Id,c3.Id} + ' Assets=' + assets.size() + ' PortfolioRows=' + portRows.size() + ' Scorecards=' + sc.size() + ' Tasks=' + tasks.size() + ' ActionPlans=' + aps.size());
