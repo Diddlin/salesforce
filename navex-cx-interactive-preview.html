@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NAVEX CX — Single Pane of Glass (Interactive Preview)</title>
+<style>
+  :root {
+    --sf-blue: #0176d3;
+    --sf-blue-dark: #014486;
+    --bg: #f3f3f3;
+    --card: #ffffff;
+    --border: #e5e5e5;
+    --text: #181818;
+    --text-weak: #5c5c5c;
+    --green: #2e844a;
+    --amber: #fe9339;
+    --red: #ea001e;
+    --shadow: 0 2px 4px rgba(0,0,0,.06), 0 0 1px rgba(0,0,0,.1);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "Salesforce Sans", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+  }
+  /* Top nav */
+  .nav {
+    background: var(--sf-blue);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 50px;
+    gap: 22px;
+  }
+  .nav .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; }
+  .nav .cloud {
+    width: 30px; height: 21px; background:#fff; border-radius: 50%/60%;
+    position: relative; flex:none;
+  }
+  .nav .cloud::before, .nav .cloud::after{
+    content:""; position:absolute; background:#fff; border-radius:50%;
+  }
+  .nav .cloud::before{ width:13px;height:13px; left:-5px; bottom:0;}
+  .nav .cloud::after{ width:16px;height:16px; right:-5px; bottom:0;}
+  .nav .tabs { display:flex; gap:4px; align-items:center; height:100%; }
+  .nav .tab {
+    padding: 0 14px; height:100%; display:flex; align-items:center; cursor:pointer;
+    font-size:13px; border-bottom: 3px solid transparent; opacity:.9; white-space:nowrap;
+  }
+  .nav .tab:hover { background: rgba(255,255,255,.12); opacity:1; }
+  .nav .tab.active { border-bottom-color:#fff; background: rgba(255,255,255,.16); opacity:1; font-weight:600; }
+  .nav .search { margin-left:auto; background:#fff; border-radius:20px; padding:6px 14px; color:#666; width:230px; font-size:13px;}
+  .nav .avatar { width:30px;height:30px;border-radius:50%; background:#c23934; margin-left:14px; display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none;}
+
+  /* Highlights bar */
+  .highlights {
+    background:#fff; margin:12px; border-radius: var(--radius); box-shadow: var(--shadow);
+    display:flex; align-items:center; padding:14px 20px; gap:34px; flex-wrap:wrap;
+  }
+  .highlights .acct { display:flex; align-items:center; gap:14px; }
+  .highlights .acct .ico {
+    width:44px;height:44px;border-radius:8px;background:#5867e8;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;
+  }
+  .highlights .acct .label { font-size:11px; color:var(--text-weak); text-transform:uppercase; letter-spacing:.4px;}
+  .highlights .acct .name { font-size:20px; font-weight:700; }
+  .highlights .field .k { font-size:11px; color:var(--text-weak); text-transform:uppercase; letter-spacing:.4px;}
+  .highlights .field .v { font-size:15px; font-weight:600; margin-top:2px;}
+  .highlights .field .v.link { color: var(--sf-blue); }
+
+  /* Layout */
+  .grid {
+    display:grid; grid-template-columns: 320px 1fr 340px; gap:12px; padding: 0 12px 24px;
+    align-items:start;
+  }
+  @media (max-width: 1100px){ .grid{ grid-template-columns:1fr; } }
+  .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:12px; }
+  .card h3 { margin:0; padding:14px 16px; font-size:14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;}
+  .card h3 .sub { margin-left:auto; font-size:11px; color:var(--text-weak); font-weight:400; }
+  .card .body { padding:16px; }
+
+  /* Health gauge */
+  .gauge-wrap { display:flex; align-items:center; gap:18px; }
+  .gauge { position:relative; width:120px; height:120px; flex:none;}
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge .center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .gauge .score { font-size:30px; font-weight:700; line-height:1;}
+  .gauge .state { font-size:12px; color:var(--amber); font-weight:600; margin-top:3px;}
+  .trend { display:flex; align-items:center; gap:6px; color:var(--red); font-weight:600; font-size:13px;}
+  .inputs { margin-top:14px; }
+  .inputs .row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-top:1px solid var(--border); font-size:13px;}
+  .inputs .row:first-child{ border-top:none;}
+  .inputs .row .val { font-weight:600; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
+  .badge.red{ background:#feded8; color:#b60515;}
+  .badge.amber{ background:#fef1e6; color:#8f4708;}
+  .badge.green{ background:#ddf0e0; color:#1c5b2d;}
+  .dot { width:10px;height:10px;border-radius:50%; display:inline-block; flex:none;}
+  .dot.green{background:var(--green);} .dot.amber{background:var(--amber);} .dot.red{background:var(--red);}
+
+  /* KPI tiles */
+  .kpis { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .kpi { border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center;}
+  .kpi .k { font-size:11px; color:var(--text-weak); text-transform:uppercase; letter-spacing:.4px;}
+  .kpi .v { font-size:24px; font-weight:700; margin-top:6px;}
+  .kpi .v.green{color:var(--green);} .kpi .v.red{color:var(--red);}
+
+  /* Relationship tree */
+  .tree .contract {
+    border:1px solid var(--border); border-radius:10px; margin-bottom:10px; overflow:hidden;
+  }
+  .tree .contract .head {
+    display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; background:#fafafa;
+  }
+  .tree .contract .head:hover{ background:#f0f6ff; }
+  .tree .contract .caret { transition: transform .18s; color:var(--text-weak); font-size:12px; width:12px;}
+  .tree .contract.open .caret{ transform: rotate(90deg); }
+  .tree .contract .cname { font-weight:600; color:var(--sf-blue); }
+  .tree .contract .cmeta { margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-weak);}
+  .tree .products { max-height:0; overflow:hidden; transition:max-height .25s ease;}
+  .tree .contract.open .products{ max-height:260px; }
+  .tree .product { display:flex; align-items:center; gap:10px; padding:11px 14px 11px 40px; border-top:1px solid var(--border); font-size:13px;}
+  .tree .product .pmeta{ margin-left:auto; display:flex; align-items:center; gap:8px;}
+  .tree .pico{ width:18px;text-align:center;}
+
+  /* Action plan */
+  .ap-guidance { background:#eef4ff; border:1px solid #cfe0ff; border-radius:8px; padding:10px 12px; font-size:13px; display:flex; gap:8px; margin-bottom:14px;}
+  .progress-line { display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+  .progress-line .label{ font-size:12px; color:var(--text-weak); white-space:nowrap;}
+  .bar { flex:1; height:10px; background:#e5e5e5; border-radius:6px; overflow:hidden;}
+  .bar > i { display:block; height:100%; width:40%; background:var(--sf-blue); border-radius:6px; transition:width .3s ease;}
+  .progress-line .pct{ font-weight:700; font-size:13px; width:42px; text-align:right;}
+  .task { display:flex; align-items:center; gap:12px; padding:11px 4px; border-top:1px solid var(--border); cursor:pointer;}
+  .task:hover{ background:#fafcff; }
+  .task .cb {
+    width:20px;height:20px;border:2px solid #b0b0b0;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;
+    color:#fff; font-size:13px; transition: all .15s;
+  }
+  .task.done .cb{ background:var(--green); border-color:var(--green);}
+  .task .tname{ flex:1; }
+  .task.done .tname{ color:var(--text-weak); text-decoration:line-through;}
+  .task .tdate{ font-size:12px; color:var(--text-weak); width:70px; text-align:right;}
+  .task .tstatus{ font-size:12px; width:56px; text-align:right; }
+  .task.done .tstatus{ color:var(--green); font-weight:600;}
+  .task:not(.done) .tstatus{ color:var(--text-weak); }
+
+  /* Timeline */
+  .tl-toggle { display:flex; gap:6px; margin-bottom:14px; background:#f0f0f0; padding:4px; border-radius:8px;}
+  .tl-toggle button { flex:1; border:none; background:transparent; padding:7px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-weak);}
+  .tl-toggle button.active { background:#fff; color:var(--text); box-shadow: var(--shadow);}
+  .tl-item { display:flex; gap:12px; padding:12px 0; position:relative;}
+  .tl-item .tico{ width:34px;height:34px;border-radius:50%; flex:none; display:flex;align-items:center;justify-content:center; color:#fff; font-size:15px;}
+  .tl-item .tsubj{ font-weight:600; }
+  .tl-item .tsub{ font-size:12px; color:var(--text-weak); margin-top:2px;}
+  .tl-item.noise { opacity:.55; }
+  .tag-noise{ font-size:10px; background:#eee; color:#888; padding:1px 6px;border-radius:8px; margin-left:6px;}
+
+  .footer-note{ text-align:center; color:var(--text-weak); font-size:12px; padding:8px 20px 26px;}
+  .pill { display:inline-block; background:#e8f2ff; color:var(--sf-blue-dark); border:1px solid #cfe0ff; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:600; margin:0 3px;}
+  .banner{ background:#0b5cab; color:#fff; font-size:12px; text-align:center; padding:6px; }
+</style>
+</head>
+<body>
+  <div class="banner">Interactive preview &mdash; NAVEX CX on Salesforce (native Action Plans baseline). Click contracts to expand, check off tasks to update progress, toggle the timeline view.</div>
+
+  <!-- Top nav -->
+  <div class="nav">
+    <div class="brand"><span class="cloud"></span> NAVEX CX</div>
+    <div class="tabs">
+      <div class="tab">Home</div>
+      <div class="tab active">Accounts</div>
+      <div class="tab">Contracts</div>
+      <div class="tab">Action Plans</div>
+      <div class="tab">CX Timeline</div>
+      <div class="tab">Reports</div>
+    </div>
+    <div class="search">🔍 Search NAVEX CX...</div>
+    <div class="avatar">PN</div>
+  </div>
+
+  <!-- Highlights -->
+  <div class="highlights">
+    <div class="acct">
+      <div class="ico">🏢</div>
+      <div>
+        <div class="label">Account</div>
+        <div class="name">Meridian Health</div>
+      </div>
+    </div>
+    <div class="field"><div class="k">Industry</div><div class="v">Healthcare</div></div>
+    <div class="field"><div class="k">ARR</div><div class="v">$480,000</div></div>
+    <div class="field"><div class="k">Renewal Date</div><div class="v">11/30/2026</div></div>
+    <div class="field"><div class="k">CSM Owner</div><div class="v link">Priya Nair</div></div>
+    <div class="field"><div class="k">CX Stage</div><div class="v">Adopt &rarr; Retain</div></div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT COLUMN -->
+    <div>
+      <div class="card">
+        <h3>💙 Customer Health</h3>
+        <div class="body">
+          <div class="gauge-wrap">
+            <div class="gauge">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#eee" stroke-width="12"/>
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#fe9339" stroke-width="12"
+                        stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="91.5"/>
+              </svg>
+              <div class="center">
+                <div class="score">72</div>
+                <div class="state">At Risk</div>
+              </div>
+            </div>
+            <div class="trend">▼ Declining</div>
+          </div>
+          <div class="inputs">
+            <div class="row"><span>Product Adoption</span><span class="val">65%</span></div>
+            <div class="row"><span>Support / Case Trend</span><span class="val" style="color:var(--red)">▼ Rising</span></div>
+            <div class="row"><span>NPS</span><span class="val"><span class="badge red">32 · Detractor</span></span></div>
+            <div class="row"><span>Renewal Proximity</span><span class="val">168 days</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📊 Key KPIs</h3>
+        <div class="body">
+          <div class="kpis">
+            <div class="kpi"><div class="k">Retention</div><div class="v green">91%</div></div>
+            <div class="kpi"><div class="k">Growth</div><div class="v green">+$60K</div></div>
+            <div class="kpi"><div class="k">Open Risks</div><div class="v red">3</div></div>
+            <div class="kpi"><div class="k">NPS</div><div class="v">32</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER COLUMN -->
+    <div>
+      <div class="card">
+        <h3>🔗 Relationship: Contracts &amp; Products <span class="sub">Company → Contract → Product</span></h3>
+        <div class="body">
+          <div class="tree">
+            <div class="contract open" onclick="toggleContract(this)">
+              <div class="head">
+                <span class="caret">▶</span>
+                <span class="cname">Contract C-1024</span>
+                <span class="cmeta"><span class="dot green"></span> Healthy · Renewal safe · Exp 11/30/2026</span>
+              </div>
+              <div class="products">
+                <div class="product"><span class="pico">📞</span> Hotline &amp; Incident Mgmt <span class="pmeta"><span class="dot green"></span> Healthy</span></div>
+                <div class="product"><span class="pico">📋</span> PolicyTech <span class="pmeta"><span class="dot amber"></span> At Risk (feature gaps)</span></div>
+                <div class="product"><span class="pico">🗂️</span> Case Management <span class="pmeta"><span class="dot green"></span> Healthy</span></div>
+              </div>
+            </div>
+            <div class="contract" onclick="toggleContract(this)">
+              <div class="head">
+                <span class="caret">▶</span>
+                <span class="cname">Contract C-1088 (Training)</span>
+                <span class="cmeta"><span class="dot amber"></span> At Risk · Long-term · Exp 03/15/2027</span>
+              </div>
+              <div class="products">
+                <div class="product"><span class="pico">🎓</span> Training — Compliance Team <span class="pmeta"><span class="dot green"></span> Healthy</span></div>
+                <div class="product"><span class="pico">🎓</span> Training — HR Team <span class="pmeta"><span class="dot red"></span> Not meeting needs</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-weak);margin-top:6px;">Same product (Training) tracked separately per contract &amp; team — one healthy, one at risk.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📗 Action Plan: Detractor NPS Playbook <span class="sub">Native Action Plan</span></h3>
+        <div class="body">
+          <div class="ap-guidance">ℹ️ <div><b>Best practice:</b> Review historical NPS and open cases before outreach. Lead with listening; confirm the program owner's top concern.</div></div>
+          <div class="progress-line">
+            <span class="label">Progress</span>
+            <div class="bar"><i id="apbar"></i></div>
+            <span class="pct" id="appct">0%</span>
+          </div>
+          <div id="tasklist">
+            <div class="task done" onclick="toggleTask(this)"><span class="cb">✓</span><span class="tname">Review survey results &amp; account history</span><span class="tdate">May 28</span><span class="tstatus">Done</span></div>
+            <div class="task done" onclick="toggleTask(this)"><span class="cb">✓</span><span class="tname">Contact program owner &amp; log concern</span><span class="tdate">May 30</span><span class="tstatus">Done</span></div>
+            <div class="task" onclick="toggleTask(this)"><span class="cb">✓</span><span class="tname">Draft remediation plan (PolicyTech gaps)</span><span class="tdate">—</span><span class="tstatus">Open</span></div>
+            <div class="task" onclick="toggleTask(this)"><span class="cb">✓</span><span class="tname">Schedule executive check-in</span><span class="tdate">—</span><span class="tstatus">Open</span></div>
+            <div class="task" onclick="toggleTask(this)"><span class="cb">✓</span><span class="tname">Log outcome &amp; update health score</span><span class="tdate">—</span><span class="tstatus">Open</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <div class="card">
+        <h3>🕒 CX Timeline</h3>
+        <div class="body">
+          <div class="tl-toggle">
+            <button class="active" onclick="setTimeline('clean', this)">Clean CX View</button>
+            <button onclick="setTimeline('all', this)">Full Activity Feed</button>
+          </div>
+          <div id="timeline">
+            <div class="tl-item"><div class="tico" style="background:#5867e8">👥</div><div><div class="tsubj">EBR Meeting</div><div class="tsub">Jun 12 · Priya Nair · QBR deck shared</div></div></div>
+            <div class="tl-item"><div class="tico" style="background:#8e44ad">📞</div><div><div class="tsubj">Risk Review call</div><div class="tsub">Jun 3 · PolicyTech adoption concerns</div></div></div>
+            <div class="tl-item"><div class="tico" style="background:#16a085">✉️</div><div><div class="tsubj">Renewal planning email</div><div class="tsub">May 20 · Sent renewal timeline</div></div></div>
+            <div class="tl-item"><div class="tico" style="background:#27ae60">🏁</div><div><div class="tsubj">Onboarding milestone reached</div><div class="tsub">Apr 2 · Hotline go-live complete</div></div></div>
+            <div class="tl-item noise"><div class="tico" style="background:#c0392b">📢</div><div><div class="tsubj">BDR outbound sequence <span class="tag-noise">sales noise</span></div><div class="tsub">Jun 10 · Auto-logged</div></div></div>
+            <div class="tl-item noise"><div class="tico" style="background:#7f8c8d">🎧</div><div><div class="tsubj">Support ticket auto-update <span class="tag-noise">support noise</span></div><div class="tsub">Jun 8 · Case #40122 status change</div></div></div>
+            <div class="tl-item noise"><div class="tico" style="background:#d35400">📨</div><div><div class="tsubj">Marketing email opened <span class="tag-noise">marketing noise</span></div><div class="tsub">Jun 5 · Newsletter</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Native-first build:
+    <span class="pill">Action Plans (playbook + tasks)</span>
+    <span class="pill">Account → Contract (relationship)</span>
+    <span class="pill">Activity Timeline (clean CX view)</span>
+    <span class="pill">Lightning Record Page (single pane)</span>
+    <br/><br/>Representative prototype of the Meridian Health demo account. Final UI renders in your Salesforce org.
+  </div>
+
+<script>
+  function toggleContract(el){
+    // prevent product clicks from toggling
+    if (event && event.target.closest('.product')) return;
+    el.classList.toggle('open');
+  }
+  function toggleTask(el){
+    el.classList.toggle('done');
+    var st = el.querySelector('.tstatus');
+    st.textContent = el.classList.contains('done') ? 'Done' : 'Open';
+    if (el.classList.contains('done') && el.querySelector('.tdate').textContent === '—'){
+      el.querySelector('.tdate').textContent = 'Today';
+    }
+    updateProgress();
+  }
+  function updateProgress(){
+    var tasks = document.querySelectorAll('#tasklist .task');
+    var done = document.querySelectorAll('#tasklist .task.done').length;
+    var pct = Math.round(done / tasks.length * 100);
+    document.getElementById('apbar').style.width = pct + '%';
+    document.getElementById('appct').textContent = pct + '%';
+  }
+  function setTimeline(mode, btn){
+    document.querySelectorAll('.tl-toggle button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('#timeline .tl-item.noise').forEach(function(n){
+      n.style.display = (mode === 'all') ? 'flex' : 'none';
+    });
+  }
+  // init
+  setTimeline('clean', document.querySelector('.tl-toggle button.active'));
+  updateProgress();
+</script>
+</body>
+</html>
