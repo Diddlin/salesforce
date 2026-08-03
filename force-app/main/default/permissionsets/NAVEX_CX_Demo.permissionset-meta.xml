@@ -8,6 +8,10 @@
         <apexClass>NavexCtaPlaybookController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>NavexCxTimelineController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <fieldPermissions>
         <field>Account.Health_Score__c</field>
         <editable>true</editable>
@@ -45,6 +49,18 @@
     </fieldPermissions>
     <fieldPermissions>
         <field>Asset.Renewal_Risk__c</field>
+        <editable>true</editable>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!-- CX_Milestone__c is one field definition on Activity, but field permissions are still
+         granted per object, so Task and Event each need their own entry. -->
+    <fieldPermissions>
+        <field>Task.CX_Milestone__c</field>
+        <editable>true</editable>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <field>Event.CX_Milestone__c</field>
         <editable>true</editable>
         <readable>true</readable>
     </fieldPermissions>

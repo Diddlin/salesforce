@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CX_Milestone__c</fullName>
+    <externalId>false</externalId>
+    <label>CX Milestone</label>
+    <trackHistory>false</trackHistory>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description
+  >Marks an activity as a customer lifecycle milestone rather than a day-to-day interaction. Defined on Activity so the single definition applies to both Task and Event. Read by the navexCxTimeline component when its "Lifecycle Milestones Only" property is on.</description>
+    <inlineHelpText
+  >Tick this to place the activity on the account's CX Timeline as a lifecycle milestone.</inlineHelpText>
+</CustomField>

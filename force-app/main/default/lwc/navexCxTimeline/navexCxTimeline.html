@@ -1,0 +1,174 @@
+<template>
+  <lightning-card icon-name="standard:timeslot">
+    <span slot="title" class="card-title">
+      <span class="card-title__text">{cardTitle}</span>
+      <template lwc:if={showTimeline}>
+        <span class="count-pill">{countLabel}</span>
+      </template>
+    </span>
+
+    <div slot="actions">
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        variant="border-filled"
+        alternative-text="Refresh timeline"
+        title="Refresh timeline"
+        onclick={handleRefresh}
+        disabled={isLoading}
+      ></lightning-button-icon>
+    </div>
+
+    <div class="cx-timeline" aria-busy={isLoading}>
+      <!-- Loading -->
+      <template lwc:if={isLoading}>
+        <div class="skeleton" role="status">
+          <span class="slds-assistive-text">Loading customer lifecycle</span>
+          <div class="skeleton__track">
+            <div class="skeleton__node"></div>
+            <div class="skeleton__node"></div>
+            <div class="skeleton__node"></div>
+            <div class="skeleton__node"></div>
+            <div class="skeleton__node"></div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Error -->
+      <template lwc:elseif={errorMessage}>
+        <div class="error-boundary" role="alert">
+          <lightning-icon
+            icon-name="utility:error"
+            variant="error"
+            size="small"
+          ></lightning-icon>
+          <div class="error-boundary__content">
+            <p class="error-boundary__title">
+              This timeline could not be loaded
+            </p>
+            <p class="error-boundary__detail">{errorMessage}</p>
+            <lightning-button
+              label="Try again"
+              variant="neutral"
+              onclick={handleRefresh}
+              class="error-boundary__action"
+            ></lightning-button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Loaded -->
+      <template lwc:else>
+        <template lwc:if={showTimeline}>
+          <div class="cx-scroller" tabindex="-1">
+            <ol
+              class="cx-track"
+              aria-label="Customer lifecycle milestones"
+              onkeydown={handleTrackKeydown}
+            >
+              <template for:each={milestones} for:item="milestone">
+                <li key={milestone.key} class="cx-node">
+                  <button
+                    type="button"
+                    class={milestone.buttonClass}
+                    aria-label={milestone.ariaLabel}
+                    aria-expanded={milestone.isSelected}
+                    aria-controls="cx-detail-panel"
+                    data-record-id={milestone.recordId}
+                    onclick={handleNodeClick}
+                  >
+                    <span class="cx-node__date" aria-hidden="true"
+                      >{milestone.dateLabel}</span
+                    >
+                    <span class={milestone.markerClass}>
+                      <lightning-icon
+                        icon-name={milestone.iconName}
+                        size="x-small"
+                        class="cx-node__glyph"
+                      ></lightning-icon>
+                    </span>
+                    <span class="cx-node__title" aria-hidden="true"
+                      >{milestone.subject}</span
+                    >
+                  </button>
+                </li>
+              </template>
+            </ol>
+          </div>
+
+          <template lwc:if={hasTruncationNote}>
+            <p class="cx-note" role="status">{truncationNote}</p>
+          </template>
+
+          <!-- Detail panel -->
+          <template lwc:if={hasSelection}>
+            <div
+              id="cx-detail-panel"
+              class={selectedMilestone.panelClass}
+              role="region"
+              aria-label="Milestone detail"
+            >
+              <div class="cx-detail__head">
+                <span class="cx-detail__pill"
+                  >{selectedMilestone.categoryLabel}</span
+                >
+                <template lwc:if={selectedMilestone.statusLabel}>
+                  <span class="cx-detail__status"
+                    >{selectedMilestone.statusLabel}</span
+                  >
+                </template>
+                <button
+                  type="button"
+                  class="cx-detail__dismiss"
+                  onclick={handleDismiss}
+                >
+                  <span aria-hidden="true">&times;</span>
+                  <span class="slds-assistive-text"
+                    >Dismiss milestone detail</span
+                  >
+                </button>
+              </div>
+
+              <h3 class="cx-detail__title">{selectedMilestone.subject}</h3>
+              <p class="cx-detail__date">{selectedMilestone.fullDateLabel}</p>
+
+              <template lwc:if={selectedMilestone.hasDescription}>
+                <p class="cx-detail__body">{selectedMilestone.description}</p>
+              </template>
+              <template lwc:else>
+                <p class="cx-detail__body cx-detail__body_empty">
+                  No description was recorded on this activity.
+                </p>
+              </template>
+
+              <div class="cx-detail__foot">
+                <template lwc:if={selectedMilestone.ownerName}>
+                  <span class="cx-detail__owner"
+                    >Logged by {selectedMilestone.ownerName}</span
+                  >
+                </template>
+                <a
+                  href={selectedMilestone.recordUrl}
+                  class="cx-detail__link"
+                  onclick={handleOpenRecord}
+                  >{selectedMilestone.openLabel}</a
+                >
+              </div>
+            </div>
+          </template>
+        </template>
+
+        <!-- Empty -->
+        <template lwc:if={showEmptyState}>
+          <div class="empty-state" role="status">
+            <lightning-icon
+              icon-name="utility:date_input"
+              size="large"
+            ></lightning-icon>
+            <h3 class="empty-state__title">No milestones yet</h3>
+            <p class="empty-state__message">{emptyMessage}</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </lightning-card>
+</template>

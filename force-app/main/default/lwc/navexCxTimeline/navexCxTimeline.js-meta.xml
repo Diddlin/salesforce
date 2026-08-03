@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>65.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>CX Timeline</masterLabel>
+    <description
+  >Horizontal lifecycle milestone timeline built from the account's Tasks and Events, with an inline detail panel. Action Plan playbook steps are excluded.</description>
+    <targets>
+        <target>lightning__RecordPage</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <objects>
+                <object>Account</object>
+            </objects>
+            <property
+        name="cardTitle"
+        type="String"
+        label="Card Title"
+        description="Heading shown at the top of the component."
+        default="Customer Lifecycle"
+      />
+            <property
+        name="maxMilestones"
+        type="Integer"
+        label="Maximum Milestones"
+        description="Upper bound on the milestones shown. When the account has more, the most recent are kept and a note reports the full count. Capped at 100."
+        default="20"
+        min="1"
+        max="100"
+      />
+            <property
+        name="includeFuture"
+        type="Boolean"
+        label="Include Future Activities"
+        description="Show activities dated after today, such as scheduled reviews, as outlined nodes at the end of the timeline."
+        default="false"
+      />
+            <property
+        name="milestonesOnly"
+        type="Boolean"
+        label="Lifecycle Milestones Only"
+        description="Show only activities ticked as CX Milestone, so the timeline tells the lifecycle story instead of listing every logged call and email. If that field is not available to the running user, every activity is shown instead of an empty card."
+        default="false"
+      />
+            <property
+        name="emptyMessage"
+        type="String"
+        label="Empty State Message"
+        description="Message shown when the account has no milestones to plot."
+        default="No lifecycle milestones yet. Logged calls, emails and meetings on this account will appear here."
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
